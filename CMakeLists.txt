@@ -15,4 +15,4 @@ set(src_dir
         # ${PROJECT_SOURCE_DIR}/src/deque.hpp
         # ${PROJECT_SOURCE_DIR}/src/map.hpp
         )
-add_executable(code ${src_dir} src/main.cpp)
+add_executable(code ${src_dir} src/main.cpp src/priority_queue.hpp)
