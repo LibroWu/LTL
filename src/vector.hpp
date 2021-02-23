@@ -13,6 +13,9 @@ namespace sjtu {
  */
 template<typename T>
 class vector {
+private:
+    T** data;
+    size_t real_size,num;
 public:
 	/**
 	 * TODO
@@ -93,7 +96,9 @@ public:
 	 * TODO Constructs
 	 * Atleast two: default constructor, copy constructor
 	 */
-	vector() {}
+	vector():real_size(0),num(0) {
+        data(nullptr);
+	}
 	vector(const vector &other) {}
 	/**
 	 * TODO Destructor

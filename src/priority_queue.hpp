@@ -80,7 +80,7 @@ namespace sjtu {
 
         void Node_Free(Node *ptr) {
             for (Node *i = ptr->child, *j; i; i = j) {
-                j = i->child;
+                j = i->next;
                 Node_Free(i);
             }
             delete ptr;
