@@ -54,9 +54,8 @@ namespace sjtu {
              * TODO add data members
              *   just add whatever you want.
              */
-            T *ptr;
-            const int ptr_size=sizeof(ptr);
-            size_t pos;
+            int pos;
+            const vector<T> *source;
         public:
             /**
              * return a new iterator which pointer n-next elements
@@ -65,33 +64,31 @@ namespace sjtu {
             iterator operator+(const int &n) const {
                 iterator tmp;
                 tmp.pos = pos + n;
-                tmp.ptr = ptr + n*ptr_size;
+                tmp.source = source;
                 return tmp;
             }
 
             iterator operator-(const int &n) const {
                 iterator tmp;
                 tmp.pos = pos - n;
-                tmp.ptr = ptr - n*ptr_size;
+                tmp.source = source;
                 return tmp;
             }
 
             // return the distance between two iterators,
             // if these two iterators point to different vectors, throw invaild_iterator.
             int operator-(const iterator &rhs) const {
-                if ((ptr - pos*ptr_size) != (rhs.ptr - rhs.pos*ptr_size)) throw invalid_iterator();
+                if (source != rhs.source) throw invalid_iterator();
                 return pos - rhs.pos;
             }
 
             iterator &operator+=(const int &n) {
                 pos = pos + n;
-                ptr = ptr + n*ptr_size;
                 return *this;
             }
 
             iterator &operator-=(const int &n) {
                 pos = pos - n;
-                ptr = ptr - n*ptr_size;
                 return *this;
             }
 
@@ -101,7 +98,6 @@ namespace sjtu {
             iterator operator++(int) {
                 iterator tmp = *this;
                 ++pos;
-                ptr+=ptr_size;
                 return tmp;
             }
 
@@ -110,7 +106,6 @@ namespace sjtu {
              */
             iterator &operator++() {
                 ++pos;
-                ptr+=ptr_size;
                 return *this;
             }
 
@@ -120,7 +115,6 @@ namespace sjtu {
             iterator operator--(int) {
                 iterator tmp = *this;
                 --pos;
-                ptr-=ptr_size;
                 return tmp;
             }
 
@@ -129,7 +123,6 @@ namespace sjtu {
              */
             iterator &operator--() {
                 --pos;
-                ptr-=ptr_size;
                 return *this;
             }
 
@@ -137,29 +130,29 @@ namespace sjtu {
              * TODO *it
              */
             T &operator*() const {
-                return *ptr;
+                return *(source->data[pos]);
             }
 
             /**
              * a operator to check whether two iterators are same (pointing to the same memory address).
              */
             bool operator==(const iterator &rhs) const {
-                return (ptr == rhs.ptr);
+                return (source == rhs.source && pos == rhs.pos);
             }
 
             bool operator==(const const_iterator &rhs) const {
-                return (ptr == rhs.ptr);
+                return (source == rhs.source && pos == rhs.pos);
             }
 
             /**
              * some other operator for iterator.
              */
             bool operator!=(const iterator &rhs) const {
-                return (ptr != rhs.ptr);
+                return (source != rhs.source || pos != rhs.pos);
             }
 
             bool operator!=(const const_iterator &rhs) const {
-                return (ptr != rhs.ptr);
+                return (source != rhs.source || pos != rhs.pos);
             }
         };
 
@@ -174,8 +167,7 @@ namespace sjtu {
              * TODO add data members
              *   just add whatever you want.
              */
-            T *ptr;
-            const int ptr_size=sizeof(ptr);
+            const vector<T> *source;
             size_t pos;
         public:
             /**
@@ -185,33 +177,31 @@ namespace sjtu {
             const_iterator operator+(const int &n) const {
                 const_iterator tmp;
                 tmp.pos = pos + n;
-                tmp.ptr = ptr + n*ptr_size;
+                tmp.source = source;
                 return tmp;
             }
 
             const_iterator operator-(const int &n) const {
                 const_iterator tmp;
                 tmp.pos = pos - n;
-                tmp.ptr = ptr - n*ptr_size;
+                tmp.source = source;
                 return tmp;
             }
 
             // return the distance between two iterators,
             // if these two iterators point to different vectors, throw invaild_iterator.
             int operator-(const const_iterator &rhs) const {
-                if ((ptr - pos*ptr_size) != (rhs.ptr - rhs.pos*ptr_size)) throw invalid_iterator();
+                if (source != rhs.source) throw invalid_iterator();
                 return pos - rhs.pos;
             }
 
             const_iterator &operator+=(const int &n) {
                 pos = pos + n;
-                ptr = ptr + n*ptr_size;
                 return *this;
             }
 
             const_iterator &operator-=(const int &n) {
                 pos = pos - n;
-                ptr = ptr - n*ptr_size;
                 return *this;
             }
 
@@ -221,7 +211,6 @@ namespace sjtu {
             const_iterator operator++(int) {
                 const_iterator tmp = *this;
                 ++pos;
-                ptr+=ptr_size;
                 return tmp;
             }
 
@@ -230,7 +219,6 @@ namespace sjtu {
              */
             const_iterator &operator++() {
                 ++pos;
-                ptr+=ptr_size;
                 return *this;
             }
 
@@ -240,7 +228,6 @@ namespace sjtu {
             const_iterator operator--(int) {
                 iterator tmp = *this;
                 --pos;
-                ptr-=ptr_size;
                 return tmp;
             }
 
@@ -249,7 +236,6 @@ namespace sjtu {
              */
             const_iterator &operator--() {
                 --pos;
-                ptr-=ptr_size;
                 return *this;
             }
 
@@ -257,29 +243,29 @@ namespace sjtu {
              * TODO *it
              */
             const T &operator*() const {
-                return *ptr;
+                return *(source->data[pos]);
             }
 
             /**
              * a operator to check whether two iterators are same (pointing to the same memory address).
              */
             bool operator==(const iterator &rhs) const {
-                return (ptr == rhs.ptr);
+                return (pos == rhs.pos && source == rhs.source);
             }
 
             bool operator==(const const_iterator &rhs) const {
-                return (ptr == rhs.ptr);
+                return (pos == rhs.pos && source == rhs.source);
             }
 
             /**
              * some other operator for iterator.
              */
             bool operator!=(const iterator &rhs) const {
-                return (ptr != rhs.ptr);
+                return (source != rhs.source || pos != rhs.pos);
             }
 
             bool operator!=(const const_iterator &rhs) const {
-                return (ptr != rhs.ptr);
+                return (source != rhs.source || pos != rhs.pos);
             }
 
         };
@@ -366,7 +352,7 @@ namespace sjtu {
          */
         const T &back() const {
             if (num == 0) throw container_is_empty();
-            return *data[num-1];
+            return *data[num - 1];
         }
 
         /**
@@ -375,14 +361,14 @@ namespace sjtu {
         iterator begin() {
             iterator tmp;
             tmp.pos = 0;
-            tmp.ptr = data[0];
+            tmp.source = this;
             return tmp;
         }
 
         const_iterator cbegin() const {
             const_iterator tmp;
             tmp.pos = 0;
-            tmp.ptr = data[0];
+            tmp.source = this;
             return tmp;
         }
 
@@ -392,14 +378,14 @@ namespace sjtu {
         iterator end() {
             iterator tmp;
             tmp.pos = num;
-            tmp.ptr = data[0]+num*sizeof(T*);
+            tmp.source = this;
             return tmp;
         }
 
         const_iterator cend() const {
             const_iterator tmp;
             tmp.pos = num;
-            tmp.ptr = data[0]+num*sizeof(T*);
+            tmp.source = this;
             return tmp;
         }
 
@@ -432,7 +418,7 @@ namespace sjtu {
          * returns an iterator pointing to the inserted value.
          */
         iterator insert(iterator pos, const T &value) {
-            return insert(pos.pos,value);
+            return insert(pos.pos, value);
         }
 
         /**
@@ -442,14 +428,14 @@ namespace sjtu {
          * throw index_out_of_bound if ind > num (in this situation ind can be num because after inserting the num will increase 1.)
          */
         iterator insert(const size_t &ind, const T &value) {
-            if (ind>num) throw index_out_of_bound();
-            if (num==real_size) doubleSpace();
-            for (size_t i=num;i>ind;--i) data[i]=data[i-1];
-            data[ind]=new T(value);
+            if (ind > num) throw index_out_of_bound();
+            if (num == real_size) doubleSpace();
+            for (size_t i = num; i > ind; --i) data[i] = data[i - 1];
+            data[ind] = new T(value);
             ++num;
             iterator tmp;
-            tmp.pos=ind;
-            tmp.ptr=data[ind];
+            tmp.pos = ind;
+            tmp.source = this;
             return tmp;
         }
 
@@ -474,7 +460,7 @@ namespace sjtu {
             --num;
             if (real_size > init_size && num < real_size >> 2) shrinkSpace();
             iterator tmp;
-            tmp.ptr = data[ind];
+            tmp.source = this;
             tmp.pos = ind;
             return tmp;
         }
