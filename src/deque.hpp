@@ -21,7 +21,7 @@ namespace sjtu {
         class Block {
         public:
             const size_t merge_Threshold = 200;
-            const size_t split_Threshold = 400;
+            const size_t split_Threshold = 4;
             size_t num;
             Node *head, *tail;
             Block *next, *pre;
@@ -115,8 +115,12 @@ namespace sjtu {
                 ++num;
                 if (!pos) {
                     ptr->next = head;
-                    if (head)
+                    if (head) {
                         head->pre = ptr;
+                    }
+                    else{
+                        tail=ptr;
+                    }
                     head = ptr;
                 }
                 else {
