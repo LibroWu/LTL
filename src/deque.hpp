@@ -7,7 +7,9 @@
 
 namespace sjtu {
     const int splitThreshold = 400;
-    const int mergeThreshold = 300;
+    const int mergeThreshold = 200;
+    const int mergeThreshold1 = 10;
+    const int splitThreshold1 = 380;
 
     template<class T>
     class deque {
@@ -48,10 +50,6 @@ namespace sjtu {
                 num = num >> 1;
                 Node *ptr = head;
                 for (int i = 1; i < num; ++i) ptr = ptr->next;
-#ifdef debug
-                if (tail == nullptr)
-                    tail= nullptr;
-#endif
                 tmp->tail = tail;
                 tmp->head = ptr->next;
                 tail = ptr;
@@ -172,7 +170,8 @@ namespace sjtu {
                     delete tmp;
                 }
                 if (next)
-                    if (num + next->num <= mergeThreshold) {
+                    if (num + next->num <= mergeThreshold ||
+                        num <= mergeThreshold1 && num + next->num <= splitThreshold1) {
                         Merge();
                         return true;
                     }
@@ -212,6 +211,7 @@ namespace sjtu {
                         ptr->next->pre = ptr;
                         ptr = ptr->next;
                     }
+                    tail = ptr;
                 }
                 return *this;
             }
@@ -249,18 +249,9 @@ namespace sjtu {
 
             void erase(const size_t pos) {
                 if (pos >= num) return;
-#ifdef debug
-                std::cout<<num<<' '<<pos<<std::endl;
-                if (num==199324)
-                    num=199324;
-#endif
                 size_t m = pos;
                 Block *ptr = head;
                 while (m >= ptr->num) {
-#ifdef debugs
-                    if (ptr->next == nullptr)
-                        std::cout << "***" << std::endl;
-#endif
                     m -= ptr->num;
                     ptr = ptr->next;
                 }
@@ -293,8 +284,11 @@ namespace sjtu {
         class iterator {
             friend deque<T>;
         private:
-            int pos;
+            int pos, posInBlock;
             ULL *source;
+            Node *nodePtr;
+            Block *blockPtr;
+            bool invalid;
         public:
             /**
              * return a new iterator which pointer n-next elements
@@ -302,16 +296,14 @@ namespace sjtu {
              * as well as operator-
              */
             iterator operator+(const int &n) const {
-                iterator tmp;
-                tmp.pos = pos + n;
-                tmp.source = source;
+                iterator tmp = *this;
+                tmp += n;
                 return tmp;
             }
 
             iterator operator-(const int &n) const {
-                iterator tmp;
-                tmp.pos = pos - n;
-                tmp.source = source;
+                iterator tmp = *this;
+                tmp -= n;
                 return tmp;
             }
 
@@ -323,12 +315,61 @@ namespace sjtu {
             }
 
             iterator &operator+=(const int &n) {
+                if (n < 0) return *this -= -n;
+                if (invalid || pos + n > source->num) {
+                    invalid = true;
+                    return *this;
+                }
                 pos += n;
+                if (pos == source->num) {
+                    blockPtr = source->tail;
+                    nodePtr = nullptr;
+                    posInBlock = ((blockPtr) ? blockPtr->num : 0);
+                    return *this;
+                }
+                int m = n;
+
+                int t = pos - n;
+                Node *tmp;
+
+                while (m >= blockPtr->num - posInBlock) {
+
+                    t += blockPtr->num - posInBlock;
+
+                    m -= blockPtr->num - posInBlock;
+                    blockPtr = blockPtr->next;
+                    nodePtr = blockPtr->head;
+                    posInBlock = 0;
+                    tmp = source->get(t);
+                    if (nodePtr->value != tmp->value)
+                        std::cout << t << std::endl;
+                }
+                for (int i = 0; i < m; ++i) nodePtr = nodePtr->next;
+                posInBlock = m;
                 return *this;
             }
 
             iterator &operator-=(const int &n) {
+                if (n < 0) return *this += -n;
+                if (invalid || pos - n < 0) {
+                    invalid = true;
+                    return *this;
+                }
+                int m = n;
+                if (m && pos == source->num) {
+                    nodePtr = ((blockPtr) ? blockPtr->tail : nullptr);
+                    --posInBlock;
+                    --m;
+                }
+                while (m >= posInBlock + 1) {
+                    m -= posInBlock + 1;
+                    blockPtr = blockPtr->pre;
+                    nodePtr = blockPtr->tail;
+                    posInBlock = blockPtr->num - 1;
+                }
                 pos -= n;
+                for (int i = 0; i < m; ++i) nodePtr = nodePtr->pre;
+                posInBlock = posInBlock - m;
                 return *this;
             }
 
@@ -337,7 +378,25 @@ namespace sjtu {
              */
             iterator operator++(int) {
                 iterator tmp = *this;
+                if (invalid || pos == source->num) {
+                    invalid = true;
+                    return tmp;
+                }
                 ++pos;
+                if (pos == source->num) {
+                    ++posInBlock;
+                    nodePtr = nullptr;
+                    return tmp;
+                }
+                if (posInBlock + 1 == blockPtr->num) {
+                    blockPtr = blockPtr->next;
+                    posInBlock = 0;
+                    nodePtr = blockPtr->head;
+                }
+                else {
+                    nodePtr = nodePtr->next;
+                    ++posInBlock;
+                }
                 return tmp;
             }
 
@@ -345,7 +404,25 @@ namespace sjtu {
              * TODO ++iter
              */
             iterator &operator++() {
+                if (invalid || pos == source->num) {
+                    invalid = true;
+                    return *this;
+                }
                 ++pos;
+                if (pos == source->num) {
+                    ++posInBlock;
+                    nodePtr = nullptr;
+                    return *this;
+                }
+                if (posInBlock + 1 == blockPtr->num && blockPtr->next) {
+                    blockPtr = blockPtr->next;
+                    posInBlock = 0;
+                    nodePtr = blockPtr->head;
+                }
+                else {
+                    nodePtr = nodePtr->next;
+                    ++posInBlock;
+                }
                 return *this;
             }
 
@@ -353,10 +430,26 @@ namespace sjtu {
              * TODO iter--
              */
             iterator operator--(int) {
-                iterator tmp;
-                tmp.pos = pos;
-                tmp.source = source;
+                iterator tmp = *this;
+                if (invalid || pos == 0) {
+                    invalid = true;
+                    return tmp;
+                }
                 --pos;
+                if (pos + 1 == source->num) {
+                    nodePtr = blockPtr->tail;
+                    --posInBlock;
+                    return tmp;
+                }
+                if (posInBlock == 0) {
+                    blockPtr = blockPtr->pre;
+                    posInBlock = blockPtr->num - 1;
+                    nodePtr = blockPtr->tail;
+                }
+                else {
+                    nodePtr = nodePtr->pre;
+                    --posInBlock;
+                }
                 return tmp;
             }
 
@@ -364,7 +457,25 @@ namespace sjtu {
              * TODO --iter
              */
             iterator &operator--() {
+                if (invalid || pos == 0) {
+                    invalid = true;
+                    return *this;
+                }
                 --pos;
+                if (pos + 1 == source->num) {
+                    nodePtr = blockPtr->tail;
+                    --posInBlock;
+                    return *this;
+                }
+                if (posInBlock == 0) {
+                    blockPtr = blockPtr->pre;
+                    posInBlock = blockPtr->num - 1;
+                    nodePtr = blockPtr->tail;
+                }
+                else {
+                    nodePtr = nodePtr->pre;
+                    --posInBlock;
+                }
                 return *this;
             }
 
@@ -373,8 +484,8 @@ namespace sjtu {
              * 		throw if iterator is invalid
              */
             T &operator*() const {
-                if (pos < 0 || pos >= source->num) throw invalid_iterator();
-                return source->get(pos)->value;
+                if (invalid || pos < 0 || pos >= source->num) throw invalid_iterator();
+                return nodePtr->value;
             }
 
             /**
@@ -382,34 +493,30 @@ namespace sjtu {
              * 		throw if iterator is invalid
              */
             T *operator->() const noexcept {
-                if (pos < 0 || pos >= source->num) throw invalid_iterator();
-                return &(source->get(pos)->value);
+                if (invalid || pos < 0 || pos >= source->num) throw invalid_iterator();
+                return &(nodePtr->value);
             }
 
             /**
              * a operator to check whether two iterators are same (pointing to the same memory).
              */
             bool operator==(const iterator &rhs) const {
-                if (source == rhs.source && pos == rhs.pos)return true;
-                return false;
+                return (nodePtr == rhs.nodePtr);
             }
 
             bool operator==(const const_iterator &rhs) const {
-                if (source == rhs.source && pos == rhs.pos)return true;
-                return false;
+                return (nodePtr == rhs.nodePtr);
             }
 
             /**
              * some other operator for iterator.
              */
             bool operator!=(const iterator &rhs) const {
-                if (source != rhs.source || pos != rhs.pos)return true;
-                return false;
+                return (nodePtr != rhs.nodePtr);
             }
 
             bool operator!=(const const_iterator &rhs) const {
-                if (source != rhs.source || pos != rhs.pos)return true;
-                return false;
+                return (nodePtr != rhs.nodePtr);
             }
         };
 
@@ -419,27 +526,38 @@ namespace sjtu {
             //  and it should be able to construct from an iterator.
         private:
             // data members.
-            int pos;
+            int pos, posInBlock;
             const ULL *source;
+            Node *nodePtr;
+            Block *blockPtr;
+            bool invalid;
         public:
-            const_iterator() : pos(0), source(nullptr) {
+            const_iterator() : pos(0), posInBlock(0), nodePtr(nullptr), source(nullptr), blockPtr(nullptr), invalid(0) {
             }
 
-            const_iterator(const const_iterator &other) : pos(other.pos), source(other.source) {}
+            const_iterator(const const_iterator &other) : pos(other.pos), posInBlock(other.posInBlock),
+                                                          source(other.source), nodePtr(other.nodePtr),
+                                                          blockPtr(other.blockPtr), invalid(other.invalid) {}
 
-            const_iterator(const iterator &other) : pos(other.pos), source(other.source) {}
+            const_iterator(const iterator &other) : pos(other.pos), posInBlock(other.posInBlock),
+                                                    source(other.source), nodePtr(other.nodePtr),
+                                                    blockPtr(other.blockPtr), invalid(other.invalid) {}
 
+        public:
+            /**
+             * return a new iterator which pointer n-next elements
+             *   if there are not enough elements, iterator becomes invalid
+             * as well as operator-
+             */
             const_iterator operator+(const int &n) const {
-                const_iterator tmp;
-                tmp.pos = pos + n;
-                tmp.source=source;
+                const_iterator tmp = *this;
+                tmp += n;
                 return tmp;
             }
 
             const_iterator operator-(const int &n) const {
-                const_iterator tmp;
-                tmp.pos = pos - n;
-                tmp.source=source;
+                const_iterator tmp = *this;
+                tmp -= n;
                 return tmp;
             }
 
@@ -451,12 +569,51 @@ namespace sjtu {
             }
 
             const_iterator &operator+=(const int &n) {
+                if (n < 0) return *this -= -n;
+                if (invalid || pos + n > source->num) {
+                    invalid = true;
+                    return *this;
+                }
                 pos += n;
+                if (pos == source->num) {
+                    nodePtr = nullptr;
+                    blockPtr = source->tail;
+                    posInBlock = ((blockPtr) ? blockPtr->num : 0);
+                    return *this;
+                }
+                int m = n;
+                while (m >= blockPtr->num - posInBlock) {
+                    m -= blockPtr->num - posInBlock;
+                    blockPtr = blockPtr->next;
+                    nodePtr = blockPtr->head;
+                    posInBlock = 0;
+                }
+                for (int i = 0; i < m; ++i) nodePtr = nodePtr->next;
+                posInBlock = m;
                 return *this;
             }
 
             const_iterator &operator-=(const int &n) {
+                if (n < 0) return *this += -n;
+                if (invalid || pos - n < 0) {
+                    invalid = true;
+                    return *this;
+                }
+                int m = n;
+                if (m && pos == source->num) {
+                    nodePtr = ((blockPtr) ? blockPtr->tail : nullptr);
+                    --posInBlock;
+                    --m;
+                }
                 pos -= n;
+                while (m >= posInBlock + 1) {
+                    m -= posInBlock + 1;
+                    blockPtr = blockPtr->pre;
+                    nodePtr = blockPtr->tail;
+                    posInBlock = blockPtr->num - 1;
+                }
+                for (int i = 0; i < m; ++i) nodePtr = nodePtr->pre;
+                posInBlock = posInBlock - m;
                 return *this;
             }
 
@@ -465,7 +622,25 @@ namespace sjtu {
              */
             const_iterator operator++(int) {
                 const_iterator tmp = *this;
+                if (invalid || pos == source->num) {
+                    invalid = true;
+                    return tmp;
+                }
                 ++pos;
+                if (pos == source->num) {
+                    ++posInBlock;
+                    nodePtr = nullptr;
+                    return tmp;
+                }
+                if (posInBlock + 1 == blockPtr->num) {
+                    blockPtr = blockPtr->next;
+                    posInBlock = 0;
+                    nodePtr = blockPtr->head;
+                }
+                else {
+                    nodePtr = nodePtr->next;
+                    ++posInBlock;
+                }
                 return tmp;
             }
 
@@ -473,7 +648,25 @@ namespace sjtu {
              * TODO ++iter
              */
             const_iterator &operator++() {
+                if (invalid || pos == source->num) {
+                    invalid = true;
+                    return *this;
+                }
                 ++pos;
+                if (pos == source->num) {
+                    ++posInBlock;
+                    nodePtr = nullptr;
+                    return *this;
+                }
+                if (posInBlock + 1 == blockPtr->num) {
+                    blockPtr = blockPtr->next;
+                    posInBlock = 0;
+                    nodePtr = blockPtr->head;
+                }
+                else {
+                    nodePtr = nodePtr->next;
+                    ++posInBlock;
+                }
                 return *this;
             }
 
@@ -481,8 +674,26 @@ namespace sjtu {
              * TODO iter--
              */
             const_iterator operator--(int) {
-                const_iterator tmp=*this;
+                const_iterator tmp = *this;
+                if (invalid || pos == 0) {
+                    invalid = true;
+                    return tmp;
+                }
                 --pos;
+                if (pos + 1 == source->num) {
+                    nodePtr = blockPtr->tail;
+                    --posInBlock;
+                    return tmp;
+                }
+                if (posInBlock == 0) {
+                    blockPtr = blockPtr->pre;
+                    posInBlock = blockPtr->num - 1;
+                    nodePtr = blockPtr->tail;
+                }
+                else {
+                    nodePtr = nodePtr->pre;
+                    --posInBlock;
+                }
                 return tmp;
             }
 
@@ -490,7 +701,25 @@ namespace sjtu {
              * TODO --iter
              */
             const_iterator &operator--() {
+                if (invalid || pos == 0) {
+                    invalid = true;
+                    return *this;
+                }
                 --pos;
+                if (pos + 1 == source->num) {
+                    nodePtr = blockPtr->tail;
+                    --posInBlock;
+                    return *this;
+                }
+                if (posInBlock == 0) {
+                    blockPtr = blockPtr->pre;
+                    posInBlock = blockPtr->num - 1;
+                    nodePtr = blockPtr->tail;
+                }
+                else {
+                    nodePtr = nodePtr->pre;
+                    --posInBlock;
+                }
                 return *this;
             }
 
@@ -499,8 +728,8 @@ namespace sjtu {
              * 		throw if iterator is invalid
              */
             const T &operator*() const {
-                if (pos < 0 || pos >= source->num) throw invalid_iterator();
-                return source->get(pos)->value;
+                if (invalid || pos < 0 || pos >= source->num) throw invalid_iterator();
+                return nodePtr->value;
             }
 
             /**
@@ -508,34 +737,30 @@ namespace sjtu {
              * 		throw if iterator is invalid
              */
             const T *operator->() const noexcept {
-                if (pos < 0 || pos >= source->num) throw invalid_iterator();
-                return &(source->get(pos)->value);
+                if (invalid || pos < 0 || pos >= source->num) throw invalid_iterator();
+                return &(nodePtr->value);
             }
 
             /**
              * a operator to check whether two iterators are same (pointing to the same memory).
              */
             bool operator==(const iterator &rhs) const {
-                if (source == rhs.source && pos == rhs.pos)return true;
-                return false;
+                return (nodePtr == rhs.nodePtr);
             }
 
             bool operator==(const const_iterator &rhs) const {
-                if (source == rhs.source && pos == rhs.pos)return true;
-                return false;
+                return (nodePtr == rhs.nodePtr);
             }
 
             /**
              * some other operator for iterator.
              */
             bool operator!=(const iterator &rhs) const {
-                if (source != rhs.source || pos != rhs.pos)return true;
-                return false;
+                return (nodePtr != rhs.nodePtr);
             }
 
             bool operator!=(const const_iterator &rhs) const {
-                if (source != rhs.source || pos != rhs.pos)return true;
-                return false;
+                return (nodePtr != rhs.nodePtr);
             }
         };
 
@@ -610,6 +835,10 @@ namespace sjtu {
             iterator tmp;
             tmp.source = &Libro;
             tmp.pos = 0;
+            tmp.posInBlock = 0;
+            tmp.invalid = 0;
+            tmp.blockPtr = Libro.head;
+            tmp.nodePtr = ((tmp.blockPtr) ? tmp.blockPtr->head : nullptr);
             return tmp;
         }
 
@@ -617,6 +846,10 @@ namespace sjtu {
             const_iterator tmp;
             tmp.source = &Libro;
             tmp.pos = 0;
+            tmp.posInBlock = 0;
+            tmp.invalid = 0;
+            tmp.blockPtr = Libro.head;
+            tmp.nodePtr = ((tmp.blockPtr) ? tmp.blockPtr->head : nullptr);
             return tmp;
         }
 
@@ -627,6 +860,10 @@ namespace sjtu {
             iterator tmp;
             tmp.source = &Libro;
             tmp.pos = Libro.num;
+            tmp.invalid = 0;
+            tmp.blockPtr = Libro.tail;
+            tmp.posInBlock = ((Libro.tail) ? Libro.tail->num : 0);
+            tmp.nodePtr = nullptr;
             return tmp;
         }
 
@@ -634,6 +871,10 @@ namespace sjtu {
             const_iterator tmp;
             tmp.source = &Libro;
             tmp.pos = Libro.num;
+            tmp.invalid = 0;
+            tmp.blockPtr = Libro.tail;
+            tmp.posInBlock = ((Libro.tail) ? Libro.tail->num : 0);
+            tmp.nodePtr = nullptr;
             return tmp;
         }
 
@@ -678,7 +919,8 @@ namespace sjtu {
          */
         iterator erase(iterator pos) {
             if (pos.source->num == 0 || pos.pos < 0 || pos.pos >= pos.source->num) throw invalid_iterator();
-            Libro.erase(pos.pos);
+            pos++;
+            Libro.erase(pos.pos - 1);
             return pos;
         }
 
