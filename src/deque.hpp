@@ -328,21 +328,11 @@ namespace sjtu {
                     return *this;
                 }
                 int m = n;
-
-                int t = pos - n;
-                Node *tmp;
-
                 while (m >= blockPtr->num - posInBlock) {
-
-                    t += blockPtr->num - posInBlock;
-
                     m -= blockPtr->num - posInBlock;
                     blockPtr = blockPtr->next;
                     nodePtr = blockPtr->head;
                     posInBlock = 0;
-                    tmp = source->get(t);
-                    if (nodePtr->value != tmp->value)
-                        std::cout << t << std::endl;
                 }
                 for (int i = 0; i < m; ++i) nodePtr = nodePtr->next;
                 posInBlock = m;

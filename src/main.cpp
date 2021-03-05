@@ -198,7 +198,7 @@ bool iteratorTest() {
             std::cout<<*it<<std::endl;
         }
         if (*ansIter != *myIter)
-            return false;
+            std::cout<<"fail++"<<std::endl;
         *ansIter = *myIter = randnum();
     }
 
