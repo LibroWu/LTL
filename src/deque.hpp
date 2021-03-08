@@ -6,10 +6,10 @@
 #include <cstddef>
 
 namespace sjtu {
-    const int splitThreshold = 1800;
-    const int mergeThreshold = 850;
+    const int splitThreshold = 500;
+    const int mergeThreshold = 400;
     const int mergeThreshold1 = 10;
-    const int splitThreshold1 =1780;
+    const int splitThreshold1 = 480;
 
     template<class T>
     class deque {
@@ -259,8 +259,6 @@ namespace sjtu {
                 }
                 --num;
                 ptr_next = ptr->next;
-                if (pos == 9799)
-                    block_num += 0;
                 if (ptr->erase(m)) {
                     --block_num;
                     if (ptr_next == tail)
@@ -276,6 +274,34 @@ namespace sjtu {
                     ptr = ptr->next;
                 }
                 return ptr->get(m);
+            }
+
+            void pushback(const T &value) {
+                ++num;
+                if (tail == nullptr) {
+                    head = tail = new Block();
+                    tail->insert(0, value);
+                }
+                else {
+                    Block* ptr=tail;
+                    if (tail->insert(tail->num,value)) {
+                        tail=tail->next;
+                        ++block_num;
+                    }
+                }
+            }
+
+            void popback() {
+                --num;
+                Block *ptr = tail;
+                tail->erase(ptr->num - 1);
+                if (tail->num == 0) {
+                    --block_num;
+                    tail = tail->pre;
+                    if (tail == nullptr) head = nullptr;
+                    else tail->next = nullptr;
+                    delete ptr;
+                }
             }
 
             Node *get(const size_t &pos, Block *&ptr, int &m) const {
@@ -539,7 +565,7 @@ namespace sjtu {
             }
 
             bool operator!=(const const_iterator &rhs) const {
-                return (source != rhs.source ||nodePtr != rhs.nodePtr);
+                return (source != rhs.source || nodePtr != rhs.nodePtr);
             }
         };
 
@@ -768,22 +794,22 @@ namespace sjtu {
              * a operator to check whether two iterators are same (pointing to the same memory).
              */
             bool operator==(const iterator &rhs) const {
-                return (source == rhs.source &&nodePtr == rhs.nodePtr);
+                return (source == rhs.source && nodePtr == rhs.nodePtr);
             }
 
             bool operator==(const const_iterator &rhs) const {
-                return (source == rhs.source &&nodePtr == rhs.nodePtr);
+                return (source == rhs.source && nodePtr == rhs.nodePtr);
             }
 
             /**
              * some other operator for iterator.
              */
             bool operator!=(const iterator &rhs) const {
-                return (source != rhs.source &&nodePtr != rhs.nodePtr);
+                return (source != rhs.source && nodePtr != rhs.nodePtr);
             }
 
             bool operator!=(const const_iterator &rhs) const {
-                return (source != rhs.source &&nodePtr != rhs.nodePtr);
+                return (source != rhs.source && nodePtr != rhs.nodePtr);
             }
         };
 
@@ -839,7 +865,7 @@ namespace sjtu {
          */
         const T &front() const {
             if (Libro.num == 0) throw container_is_empty();
-            return Libro.get(0)->value;
+            return Libro.head->head->value;
         }
 
         /**
@@ -848,7 +874,7 @@ namespace sjtu {
          */
         const T &back() const {
             if (Libro.num == 0) throw container_is_empty();
-            return Libro.get(Libro.num - 1)->value;
+            return Libro.tail->tail->value;
         }
 
         /**
@@ -950,7 +976,7 @@ namespace sjtu {
          * adds an element to the end
          */
         void push_back(const T &value) {
-            Libro.insert(Libro.num, value);
+            Libro.pushback(value);
         }
 
         /**
@@ -958,7 +984,8 @@ namespace sjtu {
          *     throw when the container is empty.
          */
         void pop_back() {
-            Libro.erase(Libro.num - 1);
+            if (empty()) throw container_is_empty();
+            Libro.popback();
         }
 
         /**
@@ -973,6 +1000,7 @@ namespace sjtu {
          *     throw when the container is empty.
          */
         void pop_front() {
+            if (empty()) throw container_is_empty();
             Libro.erase(0);
         }
     };
