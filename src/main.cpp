@@ -1,490 +1,324 @@
-// provided by your new friend Mercy. Enjoy!
 
 #include <iostream>
+#include <cstdio>
+#include <cstring>
+#include <queue>
+#include <cstdlib>
 #include <ctime>
-#include <vector>
-#include <deque>
-#include <random>
-
-#include "class-integer.hpp"
-#include "class-matrix.hpp"
-#include "class-bint.hpp"
+#include <cmath>
 #include "deque.hpp"
+#include "exceptions.hpp"
 
-std::default_random_engine randnum(2333);
 
-static const int MAX_N = 15000;
+/***************************/
+bool need_to_check_throw = 1;
+bool good_complexity = 1;//if the complexity is N^2, change to 0
+int N = good_complexity ? 50000 : 1000;
+/***************************/
 
-template <typename Ans, typename Test>
-bool isEqual(Ans &ans, Test &test) {
-    if (ans.size() != test.size())
-        return false;
 
-    if (ans.empty()) return true;
-
-    for (int i = 0; i < ans.size(); i++) {
-        if (randnum() % 2) {
-            if (ans[i] != test[i]) return false;
-        } else {
-            if (ans.at(i) != test.at(i)) return false;
-        }
-    }
-
-    if (ans.empty() != test.empty() || ans.front() != test.front() ||
-        ans.back() != test.back())
-        return false;
-
-    return true;
-}
-
-template <typename Ans, typename Test>
-void randnumFill(Ans &ans, Test &test, int n = 2e5) {
-    for (int i = 0; i < n; i++) {
-        int x = randnum();
-        if (randnum() % 2) {
-            ans.push_back(x);
-            test.push_back(x);
-        } else {
-            ans.push_front(x);
-            test.push_front(x);
-        }
-    }
-}
-
-bool pushTest() {
-    std::deque<int> ans;
-    sjtu::deque<int> deq;
-
-    for (int i = 0; i < MAX_N; i++) {
-        int x = randnum();
-        switch (randnum() % 2) {
-            case 0: deq.push_front(x); ans.push_front(x);
-                break;
-            case 1: deq.push_back(x);  ans.push_back(x);
-                break;
-        }
-    }
-
-    return isEqual(ans, deq);
-}
-
-bool popTest() {
-    std::deque<long long> ans;
-    sjtu::deque<long long> deq;
-
-    randnumFill(ans, deq);
-
-    for (int i = 0; i < MAX_N / 2; i++) {
-        switch (randnum() % 2) {
-            case 0: deq.pop_front(); ans.pop_front();
-                break;
-            case 1: deq.pop_back();  ans.pop_back();
-                break;
-        }
-    }
-
-    return isEqual(ans, deq);
-}
-
-bool insertTest() {
-    std::deque<int> ans, ans2, ans3;
-    sjtu::deque<int> deq, deq2, deq3;
-
-    for (int i = 0; i < 100; i++) {
-        int x = randnum();
-        int pos = (ans.size() == 0 ? 0 : randnum() % ans.size());
-
-        switch (randnum() % 2) {
-            case 0: deq.insert(deq.begin() + pos, x);
-                ans.insert(ans.begin() + pos, x);
-                break;
-            case 1: deq.insert(deq.end() - pos, x);
-                ans.insert(ans.end() - pos, x);
-                break;
-        }
-    }
-
-    ans2.insert(ans2.begin(), 0x5d); ans3.insert(ans3.end(), 93);
-    deq2.insert(deq2.begin(), 0x5d); deq3.insert(deq3.end(), 93);
-
-    if (!isEqual(ans2, deq2) || !isEqual(ans3, deq3))
-        return false;
-
-    return isEqual(ans, deq);
-}
-bool iteratorTest() {
-    std::deque<int> ans;
-    sjtu::deque<int> deq;
-
-    randnumFill(ans, deq);
-
-    auto ansIter = ans.begin() + ans.size() / 2;
-    auto myIter  = deq.begin() + deq.size() / 2;
-
-    // iter++, iter--
-    for (int i = 0; i < MAX_N; i++) {
-        switch(randnum() % 2) {
-            case 0: ansIter++; myIter++;
-                break;
-            case 1: ansIter--; myIter--;
-                break;
-        }
-
-        if (*ansIter != *myIter)
-            return false;
-    }
-
-    // iter += n,  iter -= n
-    for (int i = 0; i < MAX_N; i++) {
-        std::deque<int>::iterator ansIter[] = { ans.begin(), ans.end() };
-        sjtu::deque<int>::iterator myIter[]  = { deq.begin(), deq.end() };
-
-        int offset = randnum() % (ans.size() / 3) + 1;
-
-        ansIter[0] += offset; ansIter[1] -= offset;
-        myIter[0]  += offset; myIter[1]  -= offset;
-
-        for (int j = 0; j < 2; j++)
-            if (*ansIter[j] != *myIter[j])
-                return false;
-
-        if (ansIter[1] - ansIter[0] != myIter[1] - myIter[0])
-            return false;
-    }
-
-    // iter +=n, iter -= n, iter += -n, iter -= -n
-    int index = ans.size() / 2;
-    ansIter = ans.begin() + index;
-    myIter  = deq.begin() + index;
-    for (int i = 0; i < MAX_N * 2; i++) {
-        if (i==86) {
-            for (int j=0;j<ans.size();++j)
-                if (deq[j]!=ans[j]) std::cout<<deq[j]<<' '<<ans[j]<<std::endl;
-            std::cout<<"***"<<std::endl;
-        }
-        int offset = randnum() % (ans.size() / 2);
-        switch (randnum() % 4) {
-            case 0:  // iter += n
-                if (index + offset < ans.size()) {
-                    index += offset;
-                    ansIter += offset;
-                    myIter += offset;
-                }
-                break;
-            case 1: // iter -= n
-                if (index - offset >= 0) {
-                    index -= offset;
-                    ansIter -= offset; myIter -= offset;
-                }
-                break;
-            case 2:  // iter += -n
-                if (index - offset >= 0) {
-                    index += -offset;
-                    ansIter += -offset; myIter += -offset;
-                }
-                break;
-            case 3: // iter -= -n
-                if (index + offset < ans.size()) {
-                    index -= -offset;
-                    ansIter -= -offset; myIter -= -offset;
-                }
-                break;
-        }
-        if (i==86) {
-            std::cout<<"***"<<std::endl;
-            auto it=deq.begin();
-            for (;it!=deq.end();++it)
-                if (*it==*ansIter) break;
-            std::cout<<*it<<std::endl;
-        }
-        if (*ansIter != *myIter)
-            std::cout<<"fail++"<<std::endl;
-        *ansIter = *myIter = randnum();
-    }
-
-    // traverse
-    ansIter = ans.begin(); myIter = deq.begin();
-    while (ansIter != ans.end()) {
-        if (*ansIter++ != *myIter++)
-            return false;
-    }
-    //  reversal traverse
-    ansIter = ans.end() - 1; myIter = deq.end() - 1;
-    while (ansIter != ans.begin()) {
-        if (*ansIter-- != *myIter--)
-            return false;
-    }
-
-    return *ansIter == *myIter;
-}
-
-bool eraseTest() {
-    std::deque<int> ans;
-    sjtu::deque<int> deq;
-
-    randnumFill(ans, deq);
-
-    for (int i = 0; i < 100; i++) {
-        int pos = randnum() % ans.size();
-
-        switch (randnum() % 2) {
-            case 0: deq.erase(deq.begin() + pos);
-                ans.erase(ans.begin() + pos);
-                break;
-            case 1: deq.erase(deq.end() - 1 - pos);
-                ans.erase(ans.end() - 1 - pos);
-                break;
-        }
-    }
-
-    return isEqual(ans, deq);
-}
-
-int ansCounter = 0, myCounter = 0, noUseCounter = 0;
-// you should construct and deconstruct this class correctly
-class DynamicType {
+class T{
+private:
+    int x;
 public:
-    int *pct;
-    double *data;
-    DynamicType (int *p) : pct(p) , data(new double[2]) {
-        (*pct)++;
+    T(int x):x(x){}
+    int num()const {return x;}
+    void change(int y){
+        x = y;
     }
-    DynamicType (const DynamicType &other) : pct(other.pct), data(new double[2]) {
-        (*pct)++;
-    }
-    DynamicType &operator =(const DynamicType &other) {
-        if (this == &other) return *this;
-        (*pct)--;
-        pct = other.pct;
-        (*pct)++;
-        delete [] data;
-        data = new double[2];
-        return *this;
-    }
-    ~DynamicType() {
-        delete [] data;
-        (*pct)--;
-    }
-    bool operator != (const DynamicType &rhs) const { return false; }
 };
+bool operator == (const T &a, const T &b){
+    return a.num() == b.num();
+}
+bool operator != (const T &a, const T &b){
+    return a.num() != b.num();
+}
+sjtu::deque<T> q;
+std::deque<T> stl;
+sjtu::deque<T>::iterator it_q;
+std::deque<T>::iterator it_stl;
+sjtu::deque<T>::const_iterator _it_q;
+std::deque<T>::const_iterator _it_stl;
+bool equal(){
+    if(q.size() != stl.size()) return 0;
+    if(q.empty() != stl.empty()) return 0;
+    int cnt = 0;
+    for(it_q = q.begin(), it_stl = stl.begin(); it_q != q.end() || it_stl != stl.end(); it_q++, it_stl++){
+        if(*it_q != *it_stl) {
+            printf("cnt = %d\n",cnt);
+            return 0;
+        }
+        cnt++;
+    }
+    return 1;
+}
+void test1(){
+    printf("test1: push & pop                    ");
+    for(int i=1;i<=N;i++){
+        if(i % 10 <= 3) q.push_back(T(i)), stl.push_back(T(i));else
+        if(i % 10 <= 7) q.push_front(T(i)), stl.push_front(T(i));else
+        if(i % 10 <= 8) q.pop_back(), stl.pop_back();else
+        if(i % 10 <= 9) q.pop_front(), stl.pop_front();
+    }
+    if(!equal()){puts("Wrong Answer");return;}
+    while (!q.empty()){
+        q.pop_back();
+        stl.pop_back();
+    }
+    puts("Accept");
+}
+void test2(){
+    printf("test2: at & [] & front & back        ");
+    int flag = 0;
+    try{
+        int t = q.front().num();
+    }catch(...){flag ++;}
 
-bool copyAndClearTest() {
-    // you should call the constructor and deconstructor correctly
+    try{
+        int t = q.back().num();
+    }catch(...){flag ++;}
+    if(flag != 2 && need_to_check_throw){puts("Wrong Answer");return;}
+    for(int i=1;i<=N;i++){
+        if(i % 10 <= 3) q.push_back(T(i)), stl.push_back(T(i));else
+        if(i % 10 <= 7) q.push_front(T(i)), stl.push_front(T(i));else
+        if(i % 10 <= 8) q.pop_back(), stl.pop_back();else
+        if(i % 10 <= 9) q.pop_front(), stl.pop_front();
+    }
+    flag = 0;
+    try{
+        int t = (q.at(q.size() + 100)).num();
+    }catch(...){flag = 1;}
+    if(flag != 1 && need_to_check_throw){puts("Wrong Answer");return;}
+    int num = q.size();
+    for(int i=0;i<100;i++)
     {
-        std::deque<DynamicType> ans;
-        sjtu::deque<DynamicType> deq, deq2 = deq, deq3(deq2);
-
-        // empty copy and clear
-        deq.clear(); deq2.clear();  deq3.clear();
-        deq = deq = deq; deq2 = deq3; deq3 = deq = deq3 = deq2;
-
-        for (int i = 0; i < MAX_N; i++) {
-            ans.push_back(DynamicType(&ansCounter));
-            deq.push_back(DynamicType(&myCounter));
-        }
-        if (myCounter != ansCounter) return false;
-
-        deq = deq = deq = deq;
-        if (myCounter != ansCounter) return false;
-
-        deq = deq2 = deq2 = deq;
-        if (myCounter != 2 * ansCounter) return false;
-        if (!isEqual(deq, deq2)) return false;
-
-        deq2 = deq = deq = deq2 = deq2 = deq3;
-        if (myCounter != 0) return false;
-        if (!isEqual(deq, deq2)) return false;
-
-        for (int i = 0; i < MAX_N; i++)
-            deq.push_back(DynamicType(&myCounter));
-
-        deq2 = deq3 = deq;
-        if (myCounter != 3 * ansCounter) return false;
-
-        deq.clear();
-        sjtu::deque<DynamicType> deq4(deq), deq5(deq2);
-        if (myCounter != 3 * ansCounter) return false;
-        if (isEqual(deq, deq2)) return false;
+        int t = rand() % num;
+        if(q[t] != stl[t] || q.at(t) != stl.at(t)){puts("Wrong Answer");return;}
     }
-
-    return myCounter == ansCounter;
+    if(q.front() != stl.front() || q.back() != stl.back()){puts("Wrong Answer");return;}
+    puts("Accept");
 }
-
-bool memoryTest() {
-    // you should call the constructor and deconstructor correctly
-    std::deque<DynamicType> ans;
-    sjtu::deque<DynamicType> deq;
-
-    for (int i = 0; i < MAX_N; i++) {
-        ans.push_back(DynamicType(&ansCounter));
-        deq.push_back(DynamicType(&myCounter));
-    }
-
-    for (int i = 0; i < MAX_N / 10; i++) {
-        int index = randnum() % ans.size();
-        switch(randnum() % 6) {
-            case 0: ans.push_back(DynamicType(&ansCounter));
-                deq.push_back(DynamicType(&myCounter));
-                break;
-            case 1: ans.push_front(DynamicType(&ansCounter));
-                deq.push_front(DynamicType(&myCounter));
-                break;
-            case 2: ans.pop_back(); deq.pop_back();
-                break;
-            case 3: ans.pop_front(); deq.pop_front();
-                break;
-            case 4: ans.insert(ans.begin() + index, DynamicType(&ansCounter));
-                deq.insert(deq.begin() + index, DynamicType(&myCounter));
-                break;
-            case 5: ans.erase(ans.begin() + index);
-                deq.erase(deq.begin() + index);
-                break;
-            default : break;
-        }
-
-        if (ansCounter != myCounter)
-            return false;
-    }
-
-    return isEqual(ans, deq);
-}
-
-bool exceptionTest() {
-    sjtu::deque<int> deq, deq2;
-    int ct = 0;
-
-    try { deq.front(); } catch (...) { ct++; }
-    try { deq.back(); }  catch (...) { ct++; }
-    try { deq[0]; }      catch (...) { ct++; }
-
-    deq.push_back(1); deq.push_back(2);
-    deq2.push_back(1); deq2.push_back(2);
-
-    try { deq.end() - deq.begin(); }  catch (...) { ct--; }
-    try { deq2.end() - deq.begin(); } catch (...) { ct++; }
-
-    try { deq2[-1]; }    catch (...) { ct++; }
-    try { deq2[2]; }     catch (...) { ct++; }
-    try { deq2.at(-1); } catch (...) { ct++; }
-    try { deq2.at(1); }  catch (...) { ct--; }
-
-    return ct == 7;
-}
-
-template <typename T>
-bool dfs(int deep, std::deque<T> ans, sjtu::deque<T> deq) {
-    if (deep == 0)
-        return true;
-
-    int x = randnum();
-    switch (randnum() % 5) {
-        case 0: ans.insert(++ans.begin(), x);
-            deq.insert(++deq.begin(), x);
-            break;
-        case 1: ans.erase(--ans.end());
-            deq.erase(--deq.end());
-            break;
-        case 2: *(ans.begin() - (-5)) = x;
-            *(deq.begin() - (-5)) = x;
-            break;
-        case 3: *(ans.end() + (-5)) = x;
-            *(deq.end() + (-5)) = x;
-            break;
-    }
-
-    if (isEqual(ans, deq) && ansCounter == myCounter)
-        return dfs(deep / 2, ans, deq);
-    else
-        return false;
-}
-
-bool dfs2(int deep, std::deque<DynamicType> ans, sjtu::deque<DynamicType> deq) {
-    if (deep == 0)
-        return true;
-
-    DynamicType tmp(&noUseCounter), tmp2(&noUseCounter);
-    switch (randnum() % 6) {
-        case 0: ans.insert(++ans.begin(), DynamicType(&ansCounter));
-            deq.insert(++deq.begin(), DynamicType(&myCounter));
-            break;
-        case 1: ans.erase(--ans.end());
-            deq.erase(--deq.end());
-            break;
-        case 2: *(ans.begin() - (-5)) = DynamicType(&ansCounter);
-            *(deq.begin() - (-5)) = DynamicType(&myCounter);
-            break;
-        case 3: *(ans.end() + (-5)) = DynamicType(&ansCounter);
-            *(deq.end() + (-5)) = DynamicType(&myCounter);
-            break;
-        case 4: {
-            int a = randnum() % ans.size(), b = randnum() % ans.size();
-            tmp = deq[a]; deq[a] = deq[b]; deq[b] = tmp;
-            tmp = ans[a]; ans[a] = ans[b]; ans[b] = tmp;
-            tmp = tmp2;
-        }
-            break;
-        case 5: (*ans.begin()->pct)++;
-            (*deq.begin()->pct)++;
-            break;
-    }
-
-    if (isEqual(ans, deq) && ansCounter == myCounter)
-        return dfs2(deep / 2, ans, deq);
-    else
-        return false;
-}
-
-bool nomercyTest() {
-    // it is an easy test with bluffing name...
-    ansCounter = myCounter = 0;
+void test3(){
+    printf("test3: itetator operation            ");
+    int num = q.size();
+    for(int i =1 ; i <= 1000; i++)
     {
-        std::deque<int> ans;
-        sjtu::deque<int> deq;
-        randnumFill(ans, deq, 100000);
-        if (!dfs(19960904, ans, deq))
-            return false;
-
-        std::deque<DynamicType> ans2;
-        sjtu::deque<DynamicType> deq2;
-        for (int i = 0; i < 10000; i++) {
-            ans2.push_front(DynamicType(&ansCounter));
-            deq2.push_front(DynamicType(&myCounter));
-        }
-        if (!dfs2(19960904, ans2, deq2))
-            return false;
+        int t1 = rand() % num;
+        int t2 = rand() % num;
+        if(*(q.begin() + t1) != *(stl.begin() + t1)){puts("Wrong Answer");return;}
+        if(t2 && *(q.end() - t2) != *(stl.end() - t2)){puts("Wrong Answer");return;}
+        if((q.begin() + t1) - (q.begin() + t2) != (t1 - t2)){puts("Wrong Answer");return;}
     }
-    return ansCounter == myCounter;
+    if((q.begin() + num) != q.end()) {puts("Wrong Answer");return;}
+    if((q.end() - num) != q.begin()) {puts("Wrong Answer");return;}
+    bool flag=0;
+    sjtu::deque<T> other;
+    try{
+        int t = q.begin() - other.begin();
+    }catch(...){
+        flag=1;
+    }
+    if(!flag && need_to_check_throw) {puts("Wrong Answer");return;}
+    it_q = q.begin();
+    it_stl = stl.begin();
+    for(int i=1;i<=10;i++){
+        int t = rand() % (num / 10);
+        it_q += t;
+        it_stl += t;
+        if(*it_q != *it_stl) {puts("Wrong Answer");return;}
+        if(it_q -> num() != it_stl -> num()) {puts("Wrong Answer");return;}
+    }
+    it_q = --q.end();
+    it_stl = --stl.end();
+    if(*it_q != *it_stl) {puts("Wrong Answer");return;}
+    for(int i=1;i<10;i++){
+        int t = rand() % (num / 10);
+        it_q -= t;
+        it_stl -= t;
+        if(*it_q != *it_stl) {puts("Wrong Answer");return;}
+        it_q -> change(t);;
+        it_stl -> change(t);
+        if(*it_q != *it_stl) {puts("Wrong Answer");return;}
+    }
+    if(!equal()) {puts("Wrong Answer");return;}
+    if (!(q.begin() + 10 == q.begin() +5 + 6 - 1)) {puts("Wrong Answer");return;}
+    sjtu::deque<T> pp;
+    if(q.end() == pp.end()){puts("Wrong Answer");return;}
+
+    int t = rand() % (q.size() - 1);
+    it_q = q.begin() + t;
+    it_stl = stl.begin() + t;
+    const sjtu::deque<T>::iterator it_q_const(++it_q);
+    const std::deque<T>::iterator it_stl_const(++it_stl);
+    if(*it_q_const != *it_stl_const){puts("Wrong Answer");return;}
+    if(it_q_const -> num() != it_stl_const -> num()){puts("Wrong Answer");return;}
+    it_q_const -> change(t);
+    it_stl_const -> change(t);
+    if(!equal()){puts("Wrong Answer");return;}
+    puts("Accept");
 }
 
-int main() {
-    bool (*testFunc[])()= {
-            pushTest, popTest, insertTest, iteratorTest,
-            eraseTest, copyAndClearTest, memoryTest,
-            nomercyTest,
-    };
-
-    const char *testMessage[] = {
-            "Testing push...", "Testing pop...", "Testing insert...", "Testing iterator...",
-            "Testing erase...", "Testing copy and clear...", "Testing memory...",
-            "Final test without mercy...",
-    };
-
-    bool error = false;
-    for (int i = 3; i < sizeof(testFunc) / sizeof(testFunc[0]); i++) {
-        printf("%-40s", testMessage[i]);
-        if (testFunc[i]())
-            printf("Passed\n");
-        else {
-            error = true;
-            printf("Failed !!!\n");
-        }
+void test4(){
+    printf("test4: const_itetator operation      ");
+    const sjtu::deque<T> _q(q);
+    const std::deque<T> _stl(stl);
+    int num = _q.size();
+    for(int i =1 ; i <= 1000; i++)
+    {
+        int t1 = rand() % num;
+        int t2 = rand() % num;
+        if(*(_q.cbegin() + t1) != *(_stl.cbegin() + t1)){puts("Wrong Answer");return;}
+        if(t2 && *(_q.cend() - t2) != *(_stl.cend() - t2)){puts("Wrong Answer");return;}
+        if((_q.cbegin() + t1) - (_q.cbegin() + t2) != (t1 - t2)){puts("Wrong Answer");return;}
     }
-
-    if (error)
-        printf("\nUnfortunately, you failed in this test\n\a");
-    else
-        printf("\nCongratulations, your deque passed all the tests!\n");
-
-    return 0;
+    if((_q.cbegin() + num) != _q.cend()) {puts("Wrong Answer");return;}
+    if((_q.cend() - num) != _q.cbegin()) {puts("Wrong Answer");return;}
+    _it_q = _q.cbegin();
+    _it_stl = _stl.cbegin();
+    for(int i=1;i<=10;i++){
+        int t = rand() % (num / 10);
+        _it_q += t;
+        _it_stl += t;
+        if(*_it_q != *_it_stl) {puts("Wrong Answer");return;}
+        if(_it_q -> num() != _it_stl -> num()) {puts("Wrong Answer");return;}
+    }
+    _it_q = --_q.cend();
+    _it_stl = --_stl.cend();
+    if(*_it_q != *_it_stl) {puts("Wrong Answer");return;}
+    if (!(_q.cbegin() + 10 == _q.cbegin() +5 + 6 - 1)) {puts("Wrong Answer");return;}
+    puts("Accept");
 }
 
+void test5(){
+    printf("test5: erase & insert                ");
+    for(int i=1;i<=sqrt(N) && q.size()>=10;i++)
+    {
+        int t = rand() % (q.size() - 3);
+        it_q = q.begin() + t;
+        it_stl = stl.begin() + t;
+        it_q = q.erase(it_q);
+        it_stl = stl.erase(it_stl);
+        it_q = q.erase(it_q);
+        it_stl = stl.erase(it_stl);
+        it_q -> change(t);
+        it_stl -> change(t);
+    }
+    if(!equal()) {puts("Wrong Answer");return;}
+    it_q = q.erase(q.end() - 1);
+    it_stl = stl.erase(stl.end() - 1);
+    if(it_q != q.end()){puts("Wrong Answer");return;}
+    for(int i = 1; i <= sqrt(N); i++)
+    {
+        int t = rand() % q.size();
+        it_q = q.begin() + t;
+        it_stl = stl.begin() + t;
+        it_q = q.insert(it_q, T(t));
+        it_stl = stl.insert(it_stl, T(t));
+
+        it_q = q.insert(it_q, T(t + 1));
+        it_stl = stl.insert(it_stl, T(t + 1));
+    }
+    it_q = q.begin();
+    it_stl = stl.begin();
+    for(int i=1;i<=sqrt(N);i++)
+    {
+        it_q = q.insert(it_q, T(i));
+        it_stl = stl.insert(it_stl, T(i));
+    }
+    it_q = q.insert(q.end(), T(23333));
+    it_stl = stl.insert(stl.end(),T(23333));
+    if(it_q != q.end() - 1){puts("Wrong Answer");return;}
+    if(!equal()) {puts("Wrong Answer");return;}
+    puts("Accept");
+}
+void test6(){
+    printf("test6: clear & copy & assignment     ");
+    sjtu::deque<T> p(q), r;
+    r = q;
+    q.clear();
+    if(!q.empty() || q.size() != 0 || q.begin()!=q.end()){puts("Wrong Answer");return;}
+    q=q=q;
+    if(!q.empty() || q.size() != 0 || q.begin()!=q.end()){puts("Wrong Answer");return;}
+    for(int i=1;i<=100;i++)
+    {
+        int t = rand() % p.size();
+        p.push_back(T(t));
+        p.insert(p.begin() + t, T(t));
+        r.push_back(T(t));
+        r.insert(r.begin() + t, T(t));
+        stl.push_back(T(t));
+        stl.insert(stl.begin() + t, T(t));
+    }
+
+    q = p;
+    p.clear();
+    q=q=q=q;
+    if(!equal()) {puts("Wrong Answer");return;}
+    q.clear();
+    q = r;
+    r.clear();
+    q=q=q=q;
+    if(!equal()) {puts("Wrong Answer");return;}
+    puts("Accept");
+}
+void test7(){
+    printf("test7: complexity                    ");
+    int num = 500000;
+    static sjtu::deque<T> q;
+    for(int i = 0; i < num; i++) q.push_front(T(i));
+    for(int i = 0; i < num; i++) q.pop_front();
+    for(int i = 0; i < num; i++) q.push_back(T(i));
+    for(int i = 0; i < num; i++) q.pop_back();
+    for(int i = 0; i < num;i++){
+        if(i % 10 <= 3) q.push_back(T(i));else
+        if(i % 10 <= 7) q.push_front(T(i));else
+        if(i % 10 <= 8) q.pop_back();else
+        if(i % 10 <= 9) q.pop_front();
+    }
+    int test_num = 5000000;
+    it_q = q.begin() + q.size() - 10;
+    for(int i = 0; i < test_num; i++)
+    {
+        int tmp = (*it_q).num();
+        tmp = it_q -> num();
+        if(i % (test_num / 10) == 0) it_q = q.begin() + rand() % q.size();
+    }
+    for(int i = 0; i < N; i++){
+        it_q = q.begin() + rand() % q.size();
+        q.insert(it_q, T(rand()));
+    }
+    for(int i = 0; i < N; i++){
+        it_q = q.begin() + rand() % q.size();
+        q.erase(it_q);
+    }
+    for(int i = 0; i < N; i++){
+        int tmp = q[rand() % q.size()].num();
+        tmp = q.at(rand() % q.size()).num();
+    }
+    if(good_complexity){
+        q.clear();
+        for(int i=0;i<4000000;i++)
+            q.push_back(i);
+        while (q.size()>2010){
+            if(rand() % 2) q.pop_front();
+            else q.pop_back();
+        }
+        int tmp;
+        for(int i=0;i<2000000;i++){
+            tmp = q[2000].num();
+            tmp = q[1000].num();
+        }
+    }
+    puts("Accept");
+}
+int main(){
+    srand(time(NULL));
+    puts("test start:");
+    test1();//push & pop
+    test2();//at & [] & front & back
+    test3();//iterator operation
+    test4();//const_iterator operation
+    test5();//erase & insert
+    test6();//clear & copy & assignment
+    test7();//complexity
+}
