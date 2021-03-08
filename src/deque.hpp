@@ -283,9 +283,9 @@ namespace sjtu {
                     tail->insert(0, value);
                 }
                 else {
-                    Block* ptr=tail;
-                    if (tail->insert(tail->num,value)) {
-                        tail=tail->next;
+                    Block *ptr = tail;
+                    if (tail->insert(tail->num, value)) {
+                        tail = tail->next;
                         ++block_num;
                     }
                 }
@@ -338,8 +338,6 @@ namespace sjtu {
                     posInBlock = blockPtr->num;
                 }
                 else nodePtr = source->get(pos, blockPtr, posInBlock);
-                if (posInBlock == -17891602)
-                    std::cout << "***" << std::endl;
             }
 
         public:
@@ -401,9 +399,6 @@ namespace sjtu {
                     return *this;
                 }
                 int m = n;
-                if (pos == 255)
-                    m = n;
-                std::cout.flush();
                 if (m && pos == source->num) {
                     nodePtr = ((blockPtr) ? blockPtr->tail : nullptr);
                     --posInBlock;
@@ -437,7 +432,7 @@ namespace sjtu {
                     nodePtr = nullptr;
                     return tmp;
                 }
-                if (posInBlock + 1 == blockPtr->num) {
+                if (posInBlock + 1 == blockPtr->num && blockPtr->next) {
                     blockPtr = blockPtr->next;
                     posInBlock = 0;
                     nodePtr = blockPtr->head;
@@ -681,7 +676,7 @@ namespace sjtu {
                     nodePtr = nullptr;
                     return tmp;
                 }
-                if (posInBlock + 1 == blockPtr->num) {
+                if (posInBlock + 1 == blockPtr->num && blockPtr->next) {
                     blockPtr = blockPtr->next;
                     posInBlock = 0;
                     nodePtr = blockPtr->head;
@@ -707,7 +702,7 @@ namespace sjtu {
                     nodePtr = nullptr;
                     return *this;
                 }
-                if (posInBlock + 1 == blockPtr->num) {
+                if (posInBlock + 1 == blockPtr->num && blockPtr->next) {
                     blockPtr = blockPtr->next;
                     posInBlock = 0;
                     nodePtr = blockPtr->head;
@@ -805,11 +800,11 @@ namespace sjtu {
              * some other operator for iterator.
              */
             bool operator!=(const iterator &rhs) const {
-                return (source != rhs.source && nodePtr != rhs.nodePtr);
+                return (source != rhs.source || nodePtr != rhs.nodePtr);
             }
 
             bool operator!=(const const_iterator &rhs) const {
-                return (source != rhs.source && nodePtr != rhs.nodePtr);
+                return (source != rhs.source || nodePtr != rhs.nodePtr);
             }
         };
 
