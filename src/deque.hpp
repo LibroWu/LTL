@@ -325,7 +325,6 @@ namespace sjtu {
         class iterator {
             friend deque<T>;
         private:
-        public:
             int pos, posInBlock;
             ULL *source;
             Node *nodePtr;
