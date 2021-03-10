@@ -949,7 +949,7 @@ namespace sjtu {
          *     throw if the iterator is invalid or it point to a wrong place.
          */
         iterator insert(iterator pos, const T &value) {
-            if (pos.invalid || pos.pos < 0 || pos.pos > pos.source->num) throw invalid_iterator();
+            if (pos.source!=&Libro||pos.invalid || pos.pos < 0 || pos.pos > pos.source->num) throw invalid_iterator();
             Libro.insert(pos.pos, value);
             return iterator(pos.pos, pos.source);
         }
@@ -961,7 +961,7 @@ namespace sjtu {
          * throw if the container is empty, the iterator is invalid or it points to a wrong place.
          */
         iterator erase(iterator pos) {
-            if (pos.invalid || pos.pos < 0 || pos.pos >= pos.source->num) throw invalid_iterator();
+            if (pos.source!=&Libro||pos.invalid || pos.pos < 0 || pos.pos >= pos.source->num) throw invalid_iterator();
             Libro.erase(pos.pos);
             return iterator(pos.pos, pos.source);
         }
