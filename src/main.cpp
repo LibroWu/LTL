@@ -1,4 +1,5 @@
 #include "deque.hpp"
+#include "map.hpp"
 #include <ctime>
 #include <iostream>
 #include <deque>
