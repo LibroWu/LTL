@@ -18,8 +18,7 @@ namespace sjtu {
             class Compare = std::less<Key>
     >
     class map {
-    private:
-        Compare cmp;
+    public:
         enum COLOR {
             red, black
         };
@@ -58,7 +57,7 @@ namespace sjtu {
                     makeEmpty(head);
             }
 
-            void makeEmpty(const RedBlackNode *&ptr) {
+            void makeEmpty(RedBlackNode *ptr) {
                 if (ptr->rch)
                     makeEmpty(ptr->rch);
                 if (ptr->lch)
@@ -106,7 +105,7 @@ namespace sjtu {
                     G->nodeColor = red;
                 }
                 //LR
-                if (P->lch == ptr && G->rch == P) {
+                if (P->rch == ptr && G->lch == P) {
                     //G is not root
                     if (G->parent) {
                         if (G->parent->lch == G) G->parent->lch = ptr;
@@ -120,14 +119,16 @@ namespace sjtu {
                     P->rch = ptr->lch;
                     if (ptr->lch) ptr->lch->parent = P;
                     ptr->lch = P;
+                    P->parent = ptr;
                     G->lch = ptr->rch;
                     if (ptr->rch) ptr->rch->parent = G;
                     ptr->rch = G;
+                    G->parent = ptr;
                     ptr->nodeColor = black;
-                    G->nodeColor = black;
+                    G->nodeColor = red;
                 }
                 //RL
-                if (P->rch == ptr && G->lch == P) {
+                if (P->lch == ptr && G->rch == P) {
                     //G is not root
                     if (G->parent) {
                         if (G->parent->lch == G) G->parent->lch = ptr;
@@ -141,18 +142,21 @@ namespace sjtu {
                     P->lch = ptr->rch;
                     if (ptr->rch) ptr->rch->parent = P;
                     ptr->rch = P;
+                    P->parent = ptr;
                     G->rch = ptr->lch;
                     if (ptr->lch) ptr->lch->parent = G;
                     ptr->lch = G;
+                    G->parent = ptr;
                     ptr->nodeColor = black;
-                    G->nodeColor = black;
+                    G->nodeColor = red;
                 }
             }
 
             pointer insert(const Key &key, const T &value) {
+                Compare cmp;
                 if (!head) {
                     head = new RedBlackNode(key, value, black);
-                    return;
+                    return pointer(head, true);
                 }
                 RedBlackNode *ptr = head, *child, *P, *G;
                 while (1) {
@@ -180,10 +184,11 @@ namespace sjtu {
                         else {
                             ptr->lch = new RedBlackNode(key, value);
                             child = ptr->lch;
+                            child->parent = ptr;
                             if (ptr->nodeColor == red) {
-                                rotate(ptr->lch, ptr, ptr->parent);
+                                rotate(child, ptr, ptr->parent);
                             }
-                            return pointer(child);
+                            return pointer(child, true);
                         }
                     }//insert into right tree
                     else {
@@ -193,10 +198,11 @@ namespace sjtu {
                         else {
                             ptr->rch = new RedBlackNode(key, value);
                             child = ptr->rch;
+                            child->parent = ptr;
                             if (ptr->nodeColor == red) {
-                                rotate(ptr->rch, ptr, ptr->parent);
+                                rotate(child, ptr, ptr->parent);
                             }
-                            return pointer(child);
+                            return pointer(child, true);
                         }
                     }
                 }
@@ -207,6 +213,7 @@ namespace sjtu {
 
             //false for not found
             pointer get(const Key &key) {
+                Compare cmp;
                 RedBlackNode *ptr = head;
                 while (ptr) {
                     if (ptr->key == key) return pointer(ptr, true);
@@ -214,9 +221,61 @@ namespace sjtu {
                     else ptr = ptr->rch;
                 }
                 return pointer(nullptr, false);
-                
+
             }
+
+#define debugs
+#ifdef debugs
+            int BLACK_NUM, max_step;
+            bool flag;
+
+            void Dfs_check(RedBlackNode *node, int step, int black_num) {
+                if (node->lch == nullptr && node->rch == nullptr) {
+                    if (max_step < step) max_step = step;
+                    if (BLACK_NUM == 0) BLACK_NUM = black_num;
+                    else if (BLACK_NUM != black_num) flag = true;
+                    return;
+                }
+                if (node->lch) Dfs_check(node->lch, step + 1, black_num + node->lch->nodeColor);
+                if (node->rch) Dfs_check(node->rch, step + 1, black_num + node->rch->nodeColor);
+            }
+
+            void show() {
+                int l = 0, r = 0, step[10000];
+                RedBlackNode *que[10000];
+                BLACK_NUM = max_step = 0;
+                flag = 0;
+                Dfs_check(head, 0, 1);
+                std::cout << flag << '\n';
+                step[0] = 0;
+                que[r++] = head;
+                while (l < r) {
+                    if (step[l] > max_step) break;
+                    if (l && step[l - 1] < step[l]) std::cout << '\n';
+                    if (que[l] == nullptr) std::cout << "\\n 1 ";
+                    else std::cout << que[l]->key << ' ' << que[l]->nodeColor << ' ';
+                    if (que[l]) {
+                        step[r] = step[l] + 1;
+                        que[r++] = que[l]->lch;
+                        step[r] = step[l] + 1;
+                        que[r++] = que[l]->rch;
+                    }
+                    else {
+                        step[r] = step[l] + 1;
+                        que[r++] = nullptr;
+                        step[r] = step[l] + 1;
+                        que[r++] = nullptr;
+                    }
+                    ++l;
+                }
+            }
+
+#endif
+#undef debugs
+
+
         };
+
 
     public:
         /**
