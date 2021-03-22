@@ -45,12 +45,12 @@ namespace sjtu {
 
         class RBT {
         public:
-            RedBlackNode *head;
+            RedBlackNode *head, *Beg, *End;
 
             //false for failing to insert because same key has existed
             typedef pair<RedBlackNode *, bool> pointer;
 
-            RBT() : head(nullptr) {}
+            RBT() : head(nullptr), Beg(nullptr), End(nullptr) {}
 
             ~RBT() {
                 if (head)
@@ -65,7 +65,7 @@ namespace sjtu {
                 delete ptr;
             }
 
-            void rotate(RedBlackNode *ptr, RedBlackNode *P, RedBlackNode *G) {
+            void rotate(RedBlackNode *ptr, RedBlackNode *P, RedBlackNode *G, int dye_pattern = 0) {
                 //LL
                 if (P->lch == ptr && G->lch == P) {
                     //G is not root
@@ -82,8 +82,15 @@ namespace sjtu {
                     G->lch = P->rch;
                     if (P->rch) P->rch->parent = G;
                     P->rch = G;
-                    P->nodeColor = black;
-                    G->nodeColor = red;
+                    if (dye_pattern == 0) {
+                        P->nodeColor = black;
+                        G->nodeColor = red;
+                    }
+                    else if (dye_pattern == 1) {
+                        ptr->nodeColor = black;
+                        G->nodeColor = black;
+                        P->nodeColor = red;
+                    }
                 }
                 //RR
                 if (P->rch == ptr && G->rch == P) {
@@ -101,8 +108,15 @@ namespace sjtu {
                     G->rch = P->lch;
                     if (P->lch) P->lch->parent = G;
                     P->lch = G;
-                    P->nodeColor = black;
-                    G->nodeColor = red;
+                    if (dye_pattern == 0) {
+                        P->nodeColor = black;
+                        G->nodeColor = red;
+                    }
+                    else if (dye_pattern == 1) {
+                        ptr->nodeColor = black;
+                        G->nodeColor = black;
+                        P->nodeColor = red;
+                    }
                 }
                 //LR
                 if (P->rch == ptr && G->lch == P) {
@@ -124,8 +138,15 @@ namespace sjtu {
                     if (ptr->rch) ptr->rch->parent = G;
                     ptr->rch = G;
                     G->parent = ptr;
-                    ptr->nodeColor = black;
-                    G->nodeColor = red;
+                    if (dye_pattern == 0) {
+                        ptr->nodeColor = black;
+                        G->nodeColor = red;
+                    }
+                    else if (dye_pattern == 1) {
+                        ptr->nodeColor = red;
+                        G->nodeColor = black;
+                        P->nodeColor = black;
+                    }
                 }
                 //RL
                 if (P->lch == ptr && G->rch == P) {
@@ -147,8 +168,15 @@ namespace sjtu {
                     if (ptr->lch) ptr->lch->parent = G;
                     ptr->lch = G;
                     G->parent = ptr;
-                    ptr->nodeColor = black;
-                    G->nodeColor = red;
+                    if (dye_pattern == 0) {
+                        ptr->nodeColor = black;
+                        G->nodeColor = red;
+                    }
+                    else if (dye_pattern == 1) {
+                        ptr->nodeColor = red;
+                        G->nodeColor = black;
+                        P->nodeColor = black;
+                    }
                 }
             }
 
@@ -156,9 +184,11 @@ namespace sjtu {
                 Compare cmp;
                 if (!head) {
                     head = new RedBlackNode(key, value, black);
+                    Beg = End = head;
                     return pointer(head, true);
                 }
-                RedBlackNode *ptr = head, *child, *P, *G;
+                RedBlackNode *ptr = head, *child, *P, *G, *pre, *next;
+                pre = next = nullptr;
                 while (1) {
                     //have existed?
                     if (ptr->key == key) return pointer(ptr, false);
@@ -178,12 +208,19 @@ namespace sjtu {
                         }
                     //insert into left tree
                     if (cmp(key, ptr->key)) {
+                        next = ptr;
                         if (ptr->lch) {
                             ptr = ptr->lch;
                         }//insert
                         else {
                             ptr->lch = new RedBlackNode(key, value);
                             child = ptr->lch;
+                            child->pre = pre;
+                            child->next = next;
+                            if (pre) pre->next = child;
+                            else Beg = child;
+                            if (next) next->pre = child;
+                            else End = child;
                             child->parent = ptr;
                             if (ptr->nodeColor == red) {
                                 rotate(child, ptr, ptr->parent);
@@ -192,12 +229,19 @@ namespace sjtu {
                         }
                     }//insert into right tree
                     else {
+                        pre = ptr;
                         if (ptr->rch) {
                             ptr = ptr->rch;
                         }//insert
                         else {
                             ptr->rch = new RedBlackNode(key, value);
                             child = ptr->rch;
+                            child->pre = pre;
+                            child->next = next;
+                            if (pre) pre->next = child;
+                            else Beg = child;
+                            if (next) next->pre = child;
+                            else End = child;
                             child->parent = ptr;
                             if (ptr->nodeColor == red) {
                                 rotate(child, ptr, ptr->parent);
@@ -208,7 +252,160 @@ namespace sjtu {
                 }
             }
 
+            void SwapTwoRBNode(RedBlackNode *a, RedBlackNode *b) {
+                RedBlackNode *AP, *AL, *AR, *BP, *BR, *BL;
+                COLOR tmp = a->nodeColor;
+                a->nodeColor = b->nodeColor;
+                b->nodeColor = tmp;
+                bool A_lch, B_lch;
+                AP = a->parent,AL = a->lch,AR = a->rch;
+                BP = b->parent,BL = b->lch,BR = b->rch;
+                if (AP) A_lch = isLeftChild(a);
+                if (BP) B_lch = isLeftChild(b);
+                if (AP == b) {
+                    if (BP) {
+                        if (B_lch) BP->lch = a;
+                        else BP->rch = a;
+                    }
+                    else head = a;
+                    a->parent = BP;
+                    b->parent = a;
+                    if (A_lch) {
+                        a->lch = b;
+                        a->rch = BR;
+                        if (BR) BR->parent = a;
+                    }
+                    else {
+                        a->rch = b;
+                        a->lch = AL;
+                        if (BL) BL->parent = a;
+                    }
+                    if (AL) AL->parent = b;
+                    b->lch = AL;
+                    if (AR) AR->parent = b;
+                    b->rch = AR;
+                }
+                else if (BP == a) {
+                    if (AP) {
+                        if (A_lch) AP->lch = b;
+                        else AP->rch = b;
+                    }
+                    else head = b;
+                    b->parent = AP;
+                    a->parent = b;
+                    if (B_lch) {
+                        b->lch = a;
+                        b->rch = AR;
+                        if (AR) AR->parent = b;
+                    }
+                    else {
+                        b->rch = a;
+                        b->lch = AL;
+                        if (AL) AL->parent = b;
+                    }
+                    if (BL) BL->parent = a;
+                    a->lch = BL;
+                    if (BR) BR->parent = a;
+                    a->rch = BR;
+                }
+                else {
+                    if (AP) {
+                        if (A_lch) AP->lch = b;
+                        else AP->rch = b;
+                    }
+                    else head = b;
+                    a->parent = BP;
+                    if (BP) {
+                        if (B_lch) BP->lch = a;
+                        else BP->rch = a;
+                    }
+                    else head = a;
+                    b->parent = AP;
+                    if (AL) AL->parent = b;
+                    a->lch = BL;
+                    if (AR) AR->parent = b;
+                    a->rch = BR;
+                    if (BL) BL->parent = a;
+                    b->lch = AL;
+                    if (BR) BR->parent = a;
+                    b->rch = AR;
+                }
+            }
+
+            bool isLeftChild(RedBlackNode *ptr) {
+                return (ptr->parent->lch == ptr);
+            }
+
+            RedBlackNode *getSibling(RedBlackNode *ptr) {
+                if (ptr->parent) {
+                    if (isLeftChild(ptr)) return ptr->parent->rch;
+                    else return ptr->parent->lch;
+                }
+                return nullptr;
+            }
+
+            RedBlackNode *getSiblingsRedChild(RedBlackNode *ptr) {
+                RedBlackNode *tmp = getSibling(ptr);
+                if (tmp) {
+                    if (isLeftChild(ptr)) {
+                        if (tmp->rch && tmp->rch->nodeColor == red) return tmp->rch;
+                        if (tmp->lch && tmp->lch->nodeColor == red) return tmp->rch;
+                    }
+                    else {
+                        if (tmp->lch && tmp->lch->nodeColor == red) return tmp->rch;
+                        if (tmp->rch && tmp->rch->nodeColor == red) return tmp->rch;
+                    }
+                }
+                return nullptr;
+            }
+
             void Delete(const Key &key) {
+                if (!head) return;
+                Compare cmp;
+                RedBlackNode *ptr = head, *child, *P, *G, *R, *Sib;
+                while (1) {
+                    //make current node red
+                    if (ptr->nodeColor == black) {
+                        if ((ptr->lch == nullptr || ptr->lch->nodeColor == black) &&
+                            (ptr->rch == nullptr || ptr->rch->nodeColor == black)) {
+                            R = getSiblingsRedChild(ptr);
+                            Sib = getSibling(ptr);
+                            if (R == nullptr) {
+                                if (ptr->parent) ptr->parent->nodeColor = black;
+                                ptr->nodeColor = red;
+                                if (Sib) Sib->nodeColor = red;
+                            }
+                            else {
+                                rotate(R, Sib, ptr->parent, 1);
+                                ptr->nodeColor = red;
+                            }
+                        }
+                        else {
+                            int C = cmp(key, ptr->key);
+                            if (C == 0) {
+
+                            }
+                            else if (C > 0) {
+
+                            }
+                            else if (C < 0) {
+
+                            }
+                        }
+                    }
+                    //delete the node
+                    if (cmp(key, ptr->key) == 0) {
+                        //leaf or has only one child
+                        if (ptr->rch == nullptr || ptr->lch == nullptr) {
+
+                            break;
+                        }
+                    }
+                    if (ptr->lch == nullptr && ptr->rch == nullptr) break;
+                }
+                //adjust the root color
+                if (head && head->nodeColor == red)
+                    head->nodeColor = black;
             }
 
             //false for not found
@@ -221,7 +418,6 @@ namespace sjtu {
                     else ptr = ptr->rch;
                 }
                 return pointer(nullptr, false);
-
             }
 
 #define debugs
@@ -268,6 +464,11 @@ namespace sjtu {
                     }
                     ++l;
                 }
+                std::cout << "\n------\n";
+                for (RedBlackNode *ptr = Beg; ptr; ptr = ptr->next) {
+                    std::cout << ptr->key << " " << ptr->value << "**\n";
+                }
+                std::cout << "------\n";
             }
 
 #endif

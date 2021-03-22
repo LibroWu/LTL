@@ -16,10 +16,16 @@ int main(){
         rbt.show();
         cout<<"*******\n";
     }
+    cout.flush();
+    rbt.SwapTwoRBNode(rbt.head,rbt.head->lch);
+    rbt.show();
+    rbt.SwapTwoRBNode(rbt.head,rbt.head->rch);
+    rbt.show();
+    cout.flush();
+    /*
     for (int i = 0; i < n; ++i) {
         int x;
         cin>>x;
         cout<<rbt.get(x).first->value<<'\n';
-    }
-    rbt.show();
+    }*/
 }
