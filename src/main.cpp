@@ -3,6 +3,7 @@
 using std::cin;
 using std::cout;
 using sjtu::map;
+using std::endl;
 
 int main(){
     map<int,int>::RBT rbt;
@@ -16,16 +17,18 @@ int main(){
         rbt.show();
         cout<<"*******\n";
     }
-    cout.flush();
-    rbt.SwapTwoRBNode(rbt.head,rbt.head->lch);
-    rbt.show();
-    rbt.SwapTwoRBNode(rbt.head,rbt.head->rch);
-    rbt.show();
-    cout.flush();
+    for (int i = 0; i < n; ++i) {
+        int x;
+        cin>>x;
+        rbt.Delete(x);
+        cout<<"*******\n";
+        rbt.show();
+        cout<<"*******\n";
+    }
     /*
     for (int i = 0; i < n; ++i) {
         int x;
         cin>>x;
-        cout<<rbt.get(x).first->value<<'\n';
+        cout<<rbt.get(x).first->value<<endl;
     }*/
 }

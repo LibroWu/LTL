@@ -41,6 +41,7 @@ namespace sjtu {
                 if (pre)
                     pre->next = next;
             }
+
         };
 
         class RBT {
@@ -63,6 +64,38 @@ namespace sjtu {
                 if (ptr->lch)
                     makeEmpty(ptr->lch);
                 delete ptr;
+            }
+
+            void Del(RedBlackNode *ptr) {
+                if (ptr == Beg) Beg = ptr->next;
+                if (ptr == End) End = ptr->pre;
+                delete ptr;
+            }
+
+            void singleRotate(RedBlackNode *ptr) {
+                RedBlackNode *P = ptr->parent;
+                if (P == nullptr) return;
+                bool flag_ptr = isLeftChild(ptr);
+                if (P == head) {
+                    head = ptr;
+                    ptr->parent = nullptr;
+                }
+                else {
+                    if (isLeftChild(P)) P->parent->lch = ptr;
+                    else P->parent->rch = ptr;
+                    ptr->parent = P->parent;
+                }
+                P->parent = ptr;
+                if (flag_ptr) {
+                    if (ptr->rch) ptr->rch->parent = P;
+                    P->lch = ptr->rch;
+                    ptr->rch = P;
+                }
+                else {
+                    if (ptr->lch) ptr->lch->parent = P;
+                    P->rch = ptr->lch;
+                    ptr->lch = P;
+                }
             }
 
             void rotate(RedBlackNode *ptr, RedBlackNode *P, RedBlackNode *G, int dye_pattern = 0) {
@@ -258,8 +291,8 @@ namespace sjtu {
                 a->nodeColor = b->nodeColor;
                 b->nodeColor = tmp;
                 bool A_lch, B_lch;
-                AP = a->parent,AL = a->lch,AR = a->rch;
-                BP = b->parent,BL = b->lch,BR = b->rch;
+                AP = a->parent, AL = a->lch, AR = a->rch;
+                BP = b->parent, BL = b->lch, BR = b->rch;
                 if (AP) A_lch = isLeftChild(a);
                 if (BP) B_lch = isLeftChild(b);
                 if (AP == b) {
@@ -360,11 +393,11 @@ namespace sjtu {
             }
 
             void Delete(const Key &key) {
-                if (!head) return;
                 Compare cmp;
                 RedBlackNode *ptr = head, *child, *P, *G, *R, *Sib;
                 while (1) {
                     //make current node red
+                    if (ptr == nullptr) break;
                     if (ptr->nodeColor == black) {
                         if ((ptr->lch == nullptr || ptr->lch->nodeColor == black) &&
                             (ptr->rch == nullptr || ptr->rch->nodeColor == black)) {
@@ -381,27 +414,99 @@ namespace sjtu {
                             }
                         }
                         else {
-                            int C = cmp(key, ptr->key);
-                            if (C == 0) {
-
+                            if (!cmp(key,ptr->key) && !cmp(ptr->key,key)) {
+                                if (ptr->rch == nullptr || ptr->lch == nullptr) {
+                                    if (ptr->rch != nullptr) child = ptr->rch;
+                                    else child = ptr->lch;
+                                    singleRotate(child);
+                                    child->nodeColor = black;
+                                    ptr->nodeColor = red;
+                                }
+                                else {
+                                    child = ptr->rch, P = ptr, Sib = ptr->lch;
+                                    SwapTwoRBNode(ptr, ptr->next);
+                                    if (child->nodeColor == black) {
+                                        singleRotate(Sib);
+                                        Sib->nodeColor = black;
+                                        P->nodeColor = red;
+                                    }
+                                    ptr = child;
+                                }
+                                continue;
                             }
-                            else if (C > 0) {
-
+                            else if (cmp(key, ptr->key)) {
+                                P = ptr;
+                                Sib = P->rch;
+                                ptr = ptr->lch;
+                                if (ptr && ptr->nodeColor == black) {
+                                    singleRotate(Sib);
+                                    P->nodeColor = red;
+                                    Sib->nodeColor = black;
+                                }
+                                continue;
                             }
-                            else if (C < 0) {
-
+                            else  {
+                                P = ptr;
+                                Sib = P->lch;
+                                ptr = ptr->rch;
+                                if (ptr && ptr->nodeColor == black) {
+                                    singleRotate(Sib);
+                                    P->nodeColor = red;
+                                    Sib->nodeColor = black;
+                                }
+                                continue;
                             }
                         }
                     }
                     //delete the node
-                    if (cmp(key, ptr->key) == 0) {
+                    if (!cmp(key,ptr->key) && ! cmp(ptr->key,key)) {
                         //leaf or has only one child
-                        if (ptr->rch == nullptr || ptr->lch == nullptr) {
-
+                        if (ptr->rch == nullptr) {
+                            //has the left child
+                            if (ptr->lch != nullptr) {
+                                if (ptr->parent) {
+                                    if (isLeftChild(ptr)) ptr->parent->lch = ptr->lch;
+                                    else ptr->parent->rch = ptr->lch;
+                                    ptr->lch->parent = ptr->parent;
+                                }
+                                else {
+                                    head = ptr->lch;
+                                    ptr->lch->parent = nullptr;
+                                }
+                            }//does not have a child
+                            else {
+                                if (ptr->parent) {
+                                    if (isLeftChild(ptr)) ptr->parent->lch = nullptr;
+                                    else ptr->parent->rch = nullptr;
+                                }
+                                else head = nullptr;
+                            }
+                            Del(ptr);
                             break;
                         }
+                        else {
+                            //has the right child
+                            if (ptr->lch == nullptr) {
+                                if (ptr->parent) {
+                                    if (isLeftChild(ptr)) ptr->parent->lch = ptr->rch;
+                                    else ptr->parent->rch = ptr->rch;
+                                    ptr->rch->parent = ptr->parent;
+                                }
+                                else {
+                                    head = ptr->rch;
+                                    ptr->rch->parent = nullptr;
+                                }
+                                Del(ptr);
+                                break;
+                            }//has the right and left child
+                            else {
+                                child = ptr->rch;
+                                SwapTwoRBNode(ptr, ptr->next);
+                                ptr = child;
+                            }
+                        }
                     }
-                    if (ptr->lch == nullptr && ptr->rch == nullptr) break;
+                    else ptr=cmp(key,ptr->key)?ptr->lch:ptr->rch;
                 }
                 //adjust the root color
                 if (head && head->nodeColor == red)
@@ -475,7 +580,7 @@ namespace sjtu {
 #undef debugs
 
 
-        };
+        } Nebula;
 
 
     public:
