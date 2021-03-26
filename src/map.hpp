@@ -485,17 +485,7 @@ namespace sjtu {
                                 }
                                 else {
                                     child = ptr->rch, P = ptr->next, Sib = ptr->lch;
-/*                                    if (ptr->next== nullptr) {
-                                        show(false);
-                                        ptr->next = nullptr;
-                                    }*/
                                     SwapTwoRBNode(ptr, ptr->next);
-/*                                    if (flag) {
-                                        std::cout<<"---------------\n";
-                                        std::cout<<"X\n";
-                                        show(false);
-                                        std::cout<<"---------------\n";
-                                    }*/
                                     if (P->rch->nodeColor == black) {
                                         singleRotate(Sib);
                                         Sib->nodeColor = black;
@@ -503,12 +493,6 @@ namespace sjtu {
                                     }
                                     ptr = P->rch;
                                 }
-/*                                if (flag) {
-                                    std::cout<<"---------------\n";
-                                    std::cout<<"A\n";
-                                    show(false);
-                                    std::cout<<"---------------\n";
-                                }*/
                                 continue;
                             }
                             else if (cmp(key, ptr->record.first)) {
@@ -520,12 +504,6 @@ namespace sjtu {
                                     P->nodeColor = red;
                                     Sib->nodeColor = black;
                                 }
-/*                                if (flag) {
-                                    std::cout<<"---------------\n";
-                                    std::cout<<"B\n";
-                                    show(false);
-                                    std::cout<<"---------------\n";
-                                }*/
                                 continue;
                             }
                             else {
@@ -537,12 +515,6 @@ namespace sjtu {
                                     P->nodeColor = red;
                                     Sib->nodeColor = black;
                                 }
-/*                                if (flag) {
-                                    std::cout<<"---------------\n";
-                                    std::cout<<"C\n";
-                                    show(false);
-                                    std::cout<<"---------------\n";
-                                }*/
                                 continue;
                             }
                         }
@@ -598,11 +570,6 @@ namespace sjtu {
                         }
                     }
                     else ptr = cmp(key, ptr->record.first) ? ptr->lch : ptr->rch;
-/*                    if (flag) {
-                        std::cout<<"---------------\n";
-                        show(false);
-                        std::cout<<"---------------\n";
-                    }*/
                 }
                 //adjust the root color
                 if (head && head->nodeColor == red)
@@ -612,10 +579,6 @@ namespace sjtu {
             //false for not found
             pointer get(const Key &key) const {
                 Compare cmp;
-/*                for (RedBlackNode* ptr=Beg;ptr;ptr=ptr->next) {
-                    if (!(cmp(ptr->record.first, key) || cmp(key, ptr->record.first))) return pointer(ptr, true);
-                }*/
-
                 RedBlackNode *ptr = head;
                 while (ptr) {
                     if (!(cmp(ptr->record.first, key) || cmp(key, ptr->record.first))) return pointer(ptr, true);
@@ -624,83 +587,7 @@ namespace sjtu {
                 }
                 return pointer(nullptr, false);
             }
-
-//#define debugs
-#ifdef debugs
-            int BLACK_NUM, max_step;
-            bool flag;
-
-            void Dfs_check(RedBlackNode *node, int step, int black_num) {
-                if (node->lch == nullptr && node->rch == nullptr) {
-                    if (max_step < step) max_step = step;
-                    if (BLACK_NUM == 0) BLACK_NUM = black_num;
-                    else if (BLACK_NUM != black_num) flag = true;
-                    return;
-                }
-                if (node->lch) {
-                    if (node->nodeColor==red && node->lch->nodeColor==red) flag=1;
-                    Dfs_check(node->lch, step + 1, black_num + node->lch->nodeColor);
-                }
-                if (node->rch) {
-                    if (node->nodeColor==red && node->rch->nodeColor==red) flag=1;
-                    Dfs_check(node->rch, step + 1, black_num + node->rch->nodeColor);
-                }
-            }
-
-            void show(bool ff=true) {
-                int l = 0, r = 0, step[100000];
-                RedBlackNode *que[100000];
-                BLACK_NUM = max_step = 0;
-                flag = 0;
-                if (head)
-                    Dfs_check(head, 0, 1);
-                if (ff && !flag) return;
-                if (flag){
-                    flag=0;
-                    Dfs_check(head, 0, 1);
-                }
-                std::cout << flag << '\n';
-                step[0] = 0;
-                que[r++] = head;
-                while (l < r) {
-                    if (step[l] > max_step) break;
-                    if (l && step[l - 1] < step[l]) std::cout << '\n';
-                    if (que[l] == nullptr) std::cout << "\\n 1 ";
-                    else std::cout << que[l]->record.first << ' ' << que[l]->nodeColor << ' ';
-                    if (que[l]) {
-                        step[r] = step[l] + 1;
-                        que[r++] = que[l]->lch;
-                        step[r] = step[l] + 1;
-                        que[r++] = que[l]->rch;
-                    }
-                    else {
-                        step[r] = step[l] + 1;
-                        que[r++] = nullptr;
-                        step[r] = step[l] + 1;
-                        que[r++] = nullptr;
-                    }
-                    ++l;
-                }
-/*                std::cout << "\n------\n";
-                for (RedBlackNode *ptr = Beg; ptr; ptr = ptr->next) {
-                    std::cout << ptr->record.first << " " << ptr->record.second << "**\n";
-                }
-                std::cout << "------\n";*/
-                if (ff) exit(0);
-                /*
-                std::cout << "\n------\n";
-                for (RedBlackNode *ptr = End; ptr; ptr = ptr->pre) {
-                    std::cout << ptr->record.first << " " << ptr->record.second << "**\n";
-                }
-                std::cout << "------\n";*/
-            }
-
-#endif
-#undef debugs
-
-
         } Nebula;
-
 
     public:
         /**
