@@ -19,6 +19,7 @@ namespace sjtu {
     >
     class map {
     public:
+
         enum COLOR {
             red, black
         };
@@ -26,14 +27,17 @@ namespace sjtu {
         class RedBlackNode {
         public:
             COLOR nodeColor;
-            RedBlackNode *next, *pre, *sibling, *parent, *lch, *rch;
-            T value;
-            Key key;
+            RedBlackNode *next, *pre, *parent, *lch, *rch;
+            pair<const Key, T> record;
 
-            RedBlackNode(const Key &k, const T &v, COLOR col = red) : key(k), value(v), sibling(nullptr),
+            RedBlackNode(const Key &k, const T &v, COLOR col = red) : record(k, v),
                                                                       parent(nullptr), lch(nullptr),
                                                                       rch(nullptr), next(nullptr),
                                                                       pre(nullptr), nodeColor(col) {}
+
+            RedBlackNode(const RedBlackNode *other) : record(other->record), nodeColor(other->nodeColor),
+                                                      parent(nullptr),
+                                                      lch(nullptr), rch(nullptr), next(nullptr), pre(nullptr) {}
 
             ~RedBlackNode() {
                 if (next)
@@ -44,18 +48,70 @@ namespace sjtu {
 
         };
 
+        //false for failing to insert because same key has existed
+        typedef pair<RedBlackNode *, bool> pointer;
+
         class RBT {
         public:
             RedBlackNode *head, *Beg, *End;
+            size_t count;
 
-            //false for failing to insert because same key has existed
-            typedef pair<RedBlackNode *, bool> pointer;
+            //first is the smallest one in the subtree and vice versa
+            pair<RedBlackNode *, RedBlackNode *>
+            build_tree(RedBlackNode *&ptr, RedBlackNode *other_ptr, RedBlackNode *pre,
+                       RedBlackNode *next) {
+                ptr = new RedBlackNode(other_ptr);
+                ptr->pre = pre;
+                ptr->next = next;
+                pair<RedBlackNode *, RedBlackNode *> ptr_pair(ptr, ptr);
+                if (other_ptr->lch) {
+                    pair<RedBlackNode *, RedBlackNode *> tmp = build_tree(ptr->lch, other_ptr->lch, pre, ptr);
+                    ptr->lch->parent = ptr;
+                    ptr->pre = tmp.second;
+                    ptr_pair.first = tmp.first;
+                }
+                if (other_ptr->rch) {
+                    pair<RedBlackNode *, RedBlackNode *> tmp = build_tree(ptr->rch, other_ptr->rch, ptr, next);
+                    ptr->rch->parent = ptr;
+                    ptr->next = tmp.first;
+                    ptr_pair.second = tmp.second;
+                }
+                return ptr_pair;
+            }
 
-            RBT() : head(nullptr), Beg(nullptr), End(nullptr) {}
+            RBT(const RBT &other) : head(nullptr), Beg(nullptr), End(nullptr), count(other.count) {
+                if (other.head == nullptr) return;
+                pair<RedBlackNode *, RedBlackNode *> tmp = build_tree(head, other.head, nullptr, nullptr);
+                Beg = tmp.first;
+                End = tmp.second;
+            }
+
+            RBT &operator=(const RBT &other) {
+                if (this == &other) return *this;
+                this->Clear();
+                count = other.count;
+                if (other.head == nullptr) return *this;
+                pair<RedBlackNode *, RedBlackNode *> tmp = build_tree(head, other.head, nullptr, nullptr);
+                Beg = tmp.first;
+                End = tmp.second;
+                return *this;
+            }
+
+            RBT() : head(nullptr), Beg(nullptr), End(nullptr), count(0) {}
 
             ~RBT() {
-                if (head)
-                    makeEmpty(head);
+                Clear();
+            }
+
+            void Clear() {
+                if (head) {
+                    for (RedBlackNode *ptr = Beg, *j; ptr; ptr = j) {
+                        j = ptr->next;
+                        delete ptr;
+                    }
+                }
+                head = Beg = End = nullptr;
+                count = 0;
             }
 
             void makeEmpty(RedBlackNode *ptr) {
@@ -213,18 +269,19 @@ namespace sjtu {
                 }
             }
 
-            pointer insert(const Key &key, const T &value) {
+            pointer insert(const Key &key, const T &value = T()) {
                 Compare cmp;
                 if (!head) {
                     head = new RedBlackNode(key, value, black);
                     Beg = End = head;
+                    ++count;
                     return pointer(head, true);
                 }
                 RedBlackNode *ptr = head, *child, *P, *G, *pre, *next;
                 pre = next = nullptr;
                 while (1) {
                     //have existed?
-                    if (ptr->key == key) return pointer(ptr, false);
+                    if (!(cmp(ptr->record.first, key) || cmp(key, ptr->record.first))) return pointer(ptr, false);
                     //avoid red uncle node
                     if (ptr->rch && ptr->lch)
                         if (ptr->rch->nodeColor == red && ptr->lch->nodeColor == red) {
@@ -240,7 +297,7 @@ namespace sjtu {
                             }
                         }
                     //insert into left tree
-                    if (cmp(key, ptr->key)) {
+                    if (cmp(key, ptr->record.first)) {
                         next = ptr;
                         if (ptr->lch) {
                             ptr = ptr->lch;
@@ -258,6 +315,7 @@ namespace sjtu {
                             if (ptr->nodeColor == red) {
                                 rotate(child, ptr, ptr->parent);
                             }
+                            ++count;
                             return pointer(child, true);
                         }
                     }//insert into right tree
@@ -279,6 +337,7 @@ namespace sjtu {
                             if (ptr->nodeColor == red) {
                                 rotate(child, ptr, ptr->parent);
                             }
+                            ++count;
                             return pointer(child, true);
                         }
                     }
@@ -382,17 +441,17 @@ namespace sjtu {
                 if (tmp) {
                     if (isLeftChild(ptr)) {
                         if (tmp->rch && tmp->rch->nodeColor == red) return tmp->rch;
-                        if (tmp->lch && tmp->lch->nodeColor == red) return tmp->rch;
+                        if (tmp->lch && tmp->lch->nodeColor == red) return tmp->lch;
                     }
                     else {
-                        if (tmp->lch && tmp->lch->nodeColor == red) return tmp->rch;
+                        if (tmp->lch && tmp->lch->nodeColor == red) return tmp->lch;
                         if (tmp->rch && tmp->rch->nodeColor == red) return tmp->rch;
                     }
                 }
                 return nullptr;
             }
 
-            void Delete(const Key &key) {
+            void Delete(const Key &key,bool flag=false) {
                 Compare cmp;
                 RedBlackNode *ptr = head, *child, *P, *G, *R, *Sib;
                 while (1) {
@@ -414,7 +473,9 @@ namespace sjtu {
                             }
                         }
                         else {
-                            if (!cmp(key,ptr->key) && !cmp(ptr->key,key)) {
+                            if (!cmp(key, ptr->record.first) && !cmp(ptr->record.first, key)) {
+                                if (flag)
+                                    flag=1;
                                 if (ptr->rch == nullptr || ptr->lch == nullptr) {
                                     if (ptr->rch != nullptr) child = ptr->rch;
                                     else child = ptr->lch;
@@ -423,18 +484,34 @@ namespace sjtu {
                                     ptr->nodeColor = red;
                                 }
                                 else {
-                                    child = ptr->rch, P = ptr, Sib = ptr->lch;
+                                    child = ptr->rch, P = ptr->next, Sib = ptr->lch;
+/*                                    if (ptr->next== nullptr) {
+                                        show(false);
+                                        ptr->next = nullptr;
+                                    }*/
                                     SwapTwoRBNode(ptr, ptr->next);
-                                    if (child->nodeColor == black) {
+/*                                    if (flag) {
+                                        std::cout<<"---------------\n";
+                                        std::cout<<"X\n";
+                                        show(false);
+                                        std::cout<<"---------------\n";
+                                    }*/
+                                    if (P->rch->nodeColor == black) {
                                         singleRotate(Sib);
                                         Sib->nodeColor = black;
                                         P->nodeColor = red;
                                     }
-                                    ptr = child;
+                                    ptr = P->rch;
                                 }
+/*                                if (flag) {
+                                    std::cout<<"---------------\n";
+                                    std::cout<<"A\n";
+                                    show(false);
+                                    std::cout<<"---------------\n";
+                                }*/
                                 continue;
                             }
-                            else if (cmp(key, ptr->key)) {
+                            else if (cmp(key, ptr->record.first)) {
                                 P = ptr;
                                 Sib = P->rch;
                                 ptr = ptr->lch;
@@ -443,9 +520,15 @@ namespace sjtu {
                                     P->nodeColor = red;
                                     Sib->nodeColor = black;
                                 }
+/*                                if (flag) {
+                                    std::cout<<"---------------\n";
+                                    std::cout<<"B\n";
+                                    show(false);
+                                    std::cout<<"---------------\n";
+                                }*/
                                 continue;
                             }
-                            else  {
+                            else {
                                 P = ptr;
                                 Sib = P->lch;
                                 ptr = ptr->rch;
@@ -454,12 +537,18 @@ namespace sjtu {
                                     P->nodeColor = red;
                                     Sib->nodeColor = black;
                                 }
+/*                                if (flag) {
+                                    std::cout<<"---------------\n";
+                                    std::cout<<"C\n";
+                                    show(false);
+                                    std::cout<<"---------------\n";
+                                }*/
                                 continue;
                             }
                         }
                     }
                     //delete the node
-                    if (!cmp(key,ptr->key) && ! cmp(ptr->key,key)) {
+                    if (!cmp(key, ptr->record.first) && !cmp(ptr->record.first, key)) {
                         //leaf or has only one child
                         if (ptr->rch == nullptr) {
                             //has the left child
@@ -482,6 +571,7 @@ namespace sjtu {
                                 else head = nullptr;
                             }
                             Del(ptr);
+                            --count;
                             break;
                         }
                         else {
@@ -497,16 +587,22 @@ namespace sjtu {
                                     ptr->rch->parent = nullptr;
                                 }
                                 Del(ptr);
+                                --count;
                                 break;
                             }//has the right and left child
                             else {
-                                child = ptr->rch;
+                                child = ptr->next;
                                 SwapTwoRBNode(ptr, ptr->next);
-                                ptr = child;
+                                ptr = child->rch;
                             }
                         }
                     }
-                    else ptr=cmp(key,ptr->key)?ptr->lch:ptr->rch;
+                    else ptr = cmp(key, ptr->record.first) ? ptr->lch : ptr->rch;
+/*                    if (flag) {
+                        std::cout<<"---------------\n";
+                        show(false);
+                        std::cout<<"---------------\n";
+                    }*/
                 }
                 //adjust the root color
                 if (head && head->nodeColor == red)
@@ -514,18 +610,22 @@ namespace sjtu {
             }
 
             //false for not found
-            pointer get(const Key &key) {
+            pointer get(const Key &key) const {
                 Compare cmp;
+/*                for (RedBlackNode* ptr=Beg;ptr;ptr=ptr->next) {
+                    if (!(cmp(ptr->record.first, key) || cmp(key, ptr->record.first))) return pointer(ptr, true);
+                }*/
+
                 RedBlackNode *ptr = head;
                 while (ptr) {
-                    if (ptr->key == key) return pointer(ptr, true);
-                    if (cmp(key, ptr->key)) ptr = ptr->lch;
+                    if (!(cmp(ptr->record.first, key) || cmp(key, ptr->record.first))) return pointer(ptr, true);
+                    if (cmp(key, ptr->record.first)) ptr = ptr->lch;
                     else ptr = ptr->rch;
                 }
                 return pointer(nullptr, false);
             }
 
-#define debugs
+//#define debugs
 #ifdef debugs
             int BLACK_NUM, max_step;
             bool flag;
@@ -537,16 +637,28 @@ namespace sjtu {
                     else if (BLACK_NUM != black_num) flag = true;
                     return;
                 }
-                if (node->lch) Dfs_check(node->lch, step + 1, black_num + node->lch->nodeColor);
-                if (node->rch) Dfs_check(node->rch, step + 1, black_num + node->rch->nodeColor);
+                if (node->lch) {
+                    if (node->nodeColor==red && node->lch->nodeColor==red) flag=1;
+                    Dfs_check(node->lch, step + 1, black_num + node->lch->nodeColor);
+                }
+                if (node->rch) {
+                    if (node->nodeColor==red && node->rch->nodeColor==red) flag=1;
+                    Dfs_check(node->rch, step + 1, black_num + node->rch->nodeColor);
+                }
             }
 
-            void show() {
-                int l = 0, r = 0, step[10000];
-                RedBlackNode *que[10000];
+            void show(bool ff=true) {
+                int l = 0, r = 0, step[100000];
+                RedBlackNode *que[100000];
                 BLACK_NUM = max_step = 0;
                 flag = 0;
-                Dfs_check(head, 0, 1);
+                if (head)
+                    Dfs_check(head, 0, 1);
+                if (ff && !flag) return;
+                if (flag){
+                    flag=0;
+                    Dfs_check(head, 0, 1);
+                }
                 std::cout << flag << '\n';
                 step[0] = 0;
                 que[r++] = head;
@@ -554,7 +666,7 @@ namespace sjtu {
                     if (step[l] > max_step) break;
                     if (l && step[l - 1] < step[l]) std::cout << '\n';
                     if (que[l] == nullptr) std::cout << "\\n 1 ";
-                    else std::cout << que[l]->key << ' ' << que[l]->nodeColor << ' ';
+                    else std::cout << que[l]->record.first << ' ' << que[l]->nodeColor << ' ';
                     if (que[l]) {
                         step[r] = step[l] + 1;
                         que[r++] = que[l]->lch;
@@ -569,11 +681,18 @@ namespace sjtu {
                     }
                     ++l;
                 }
-                std::cout << "\n------\n";
+/*                std::cout << "\n------\n";
                 for (RedBlackNode *ptr = Beg; ptr; ptr = ptr->next) {
-                    std::cout << ptr->key << " " << ptr->value << "**\n";
+                    std::cout << ptr->record.first << " " << ptr->record.second << "**\n";
                 }
-                std::cout << "------\n";
+                std::cout << "------\n";*/
+                if (ff) exit(0);
+                /*
+                std::cout << "\n------\n";
+                for (RedBlackNode *ptr = End; ptr; ptr = ptr->pre) {
+                    std::cout << ptr->record.first << " " << ptr->record.second << "**\n";
+                }
+                std::cout << "------\n";*/
             }
 
 #endif
@@ -601,83 +720,195 @@ namespace sjtu {
         class const_iterator;
 
         class iterator {
+            friend map<Key, T, Compare>;
         private:
-            /**
-             * TODO add data members
-             *   just add whatever you want.
-             */
+            RedBlackNode *ptr;
+            const RBT *source;
         public:
-            iterator() {
-                // TODO
-            }
 
-            iterator(const iterator &other) {
-                // TODO
-            }
+            iterator(RedBlackNode *ptr, const RBT *source) : ptr(ptr), source(source) {}
+
+            iterator() : ptr(nullptr), source(nullptr) {}
+
+            iterator(const iterator &other) : ptr(other.ptr), source(other.source) {}
 
             /**
              * TODO iter++
              */
-            iterator operator++(int) {}
+            iterator operator++(int) {
+                if (ptr == nullptr) throw invalid_iterator();
+                iterator tmp(*this);
+                ptr = ptr->next;
+                return tmp;
+            }
 
             /**
              * TODO ++iter
              */
-            iterator &operator++() {}
+            iterator &operator++() {
+                if (ptr == nullptr) throw invalid_iterator();
+                ptr = ptr->next;
+                return *this;
+            }
 
             /**
              * TODO iter--
              */
-            iterator operator--(int) {}
+            iterator operator--(int) {
+                if (ptr == nullptr) {
+                    ptr = source->End;
+                    return iterator(nullptr, source);
+                }
+                if (ptr->pre == nullptr) throw invalid_iterator();
+                iterator tmp(*this);
+                ptr = ptr->pre;
+                return tmp;
+            }
 
             /**
              * TODO --iter
              */
-            iterator &operator--() {}
+            iterator &operator--() {
+                if (ptr == nullptr) {
+                    ptr = source->End;
+                    return *this;
+                }
+                if (ptr->pre == nullptr) throw invalid_iterator();
+                ptr = ptr->pre;
+                return *this;
+            }
+
+            value_type &operator*() const {
+                if (ptr == nullptr) throw invalid_iterator();
+                return ptr->record;
+            }
 
             /**
              * an operator to check whether two iterators are same (pointing to the same memory).
              */
-            value_type &operator*() const {}
+            bool operator==(const iterator &rhs) const {
+                return (ptr == rhs.ptr && source == rhs.source);
+            }
 
-            bool operator==(const iterator &rhs) const {}
-
-            bool operator==(const const_iterator &rhs) const {}
+            bool operator==(const const_iterator &rhs) const {
+                return (ptr == rhs.ptr && source == rhs.source);
+            }
 
             /**
              * some other operator for iterator.
              */
-            bool operator!=(const iterator &rhs) const {}
+            bool operator!=(const iterator &rhs) const {
+                return (ptr != rhs.ptr || source != rhs.source);
+            }
 
-            bool operator!=(const const_iterator &rhs) const {}
+            bool operator!=(const const_iterator &rhs) const {
+                return (ptr != rhs.ptr || source != rhs.source);
+            }
 
             /**
              * for the support of it->first.
              * See <http://kelvinh.github.io/blog/2013/11/20/overloading-of-member-access-operator-dash-greater-than-symbol-in-cpp/> for help.
              */
-            value_type *operator->() const noexcept {}
+            value_type *operator->() const noexcept {
+                return &(ptr->record);
+            }
         };
 
         class const_iterator {
-            // it should has similar member method as iterator.
-            //  and it should be able to construct from an iterator.
+            friend map<Key, T, Compare>;
         private:
-            // data members.
+            const RedBlackNode *ptr;
+            const RBT *source;
         public:
-            const_iterator() {
-                // TODO
+
+            //const_iterator(RedBlackNode *ptr, RBT *source) : ptr(ptr), source(source) {}
+
+            const_iterator() : ptr(nullptr), source(nullptr) {}
+
+            const_iterator(const const_iterator &other) : ptr(other.ptr), source(other.source) {}
+
+            const_iterator(const iterator &other) : ptr(other.ptr), source(other.source) {}
+
+            /**
+             * TODO iter++
+             */
+            const_iterator operator++(int) {
+                if (ptr == nullptr) throw invalid_iterator();
+                const_iterator tmp(*this);
+                ptr = ptr->next;
+                return tmp;
             }
 
-            const_iterator(const const_iterator &other) {
-                // TODO
+            /**
+             * TODO ++iter
+             */
+            const_iterator &operator++() {
+                if (ptr == nullptr) throw invalid_iterator();
+                ptr = ptr->next;
+                return *this;
             }
 
-            const_iterator(const iterator &other) {
-                // TODO
+            /**
+             * TODO iter--
+             */
+            const_iterator operator--(int) {
+                if (ptr == nullptr) {
+                    ptr = source->End;
+                    return iterator(nullptr, source);
+                }
+                if (ptr->pre == nullptr) throw invalid_iterator();
+                const_iterator tmp(*this);
+                ptr = ptr->pre;
+                return tmp;
             }
-            // And other methods in iterator.
-            // And other methods in iterator.
-            // And other methods in iterator.
+
+            /**
+             * TODO --iter
+             */
+            const_iterator &operator--() {
+                if (ptr == nullptr) {
+                    ptr = source->End;
+                    return *this;
+                }
+                if (ptr->pre == nullptr) throw invalid_iterator();
+                ptr = ptr->pre;
+                return *this;
+            }
+
+            const value_type &operator*() const {
+                if (ptr == nullptr) throw invalid_iterator();
+                return ptr->record;
+            }
+
+            /**
+             * an operator to check whether two iterators are same (pointing to the same memory).
+             */
+            bool operator==(const iterator &rhs) const {
+                return (ptr == rhs.ptr && source == rhs.source);
+            }
+
+            bool operator==(const const_iterator &rhs) const {
+                return (ptr == rhs.ptr && source == rhs.source);
+            }
+
+            /**
+             * some other operator for iterator.
+             */
+            bool operator!=(const iterator &rhs) const {
+                return (ptr != rhs.ptr || source != rhs.source);
+            }
+
+            bool operator!=(const const_iterator &rhs) const {
+                return (ptr != rhs.ptr || source != rhs.source);
+            }
+
+            /**
+             * for the support of it->first.
+             * See <http://kelvinh.github.io/blog/2013/11/20/overloading-of-member-access-operator-dash-greater-than-symbol-in-cpp/> for help.
+             */
+            const value_type *operator->() const noexcept {
+                return &(ptr->record);
+            }
         };
 
         /**
@@ -685,12 +916,14 @@ namespace sjtu {
          */
         map() {}
 
-        map(const map &other) {}
+        map(const map &other) : Nebula(other.Nebula) {}
 
         /**
          * TODO assignment operator
          */
-        map &operator=(const map &other) {}
+        map &operator=(const map &other) {
+            Nebula = other.Nebula;
+        }
 
         /**
          * TODO Destructors
@@ -703,9 +936,19 @@ namespace sjtu {
          * Returns a reference to the mapped value of the element with key equivalent to key.
          * If no such element exists, an exception of type `index_out_of_bound'
          */
-        T &at(const Key &key) {}
+        T &at(const Key &key) {
+            pointer ptr = Nebula.get(key);
+            if (ptr.second)
+                return ptr.first->record.second;
+            else throw index_out_of_bound();
+        }
 
-        const T &at(const Key &key) const {}
+        const T &at(const Key &key) const {
+            pointer ptr = Nebula.get(key);
+            if (ptr.second)
+                return ptr.first->record.second;
+            else throw index_out_of_bound();
+        }
 
         /**
          * TODO
@@ -713,43 +956,82 @@ namespace sjtu {
          * Returns a reference to the value that is mapped to a key equivalent to key,
          *   performing an insertion if such key does not already exist.
          */
-        T &operator[](const Key &key) {}
+        T &operator[](const Key &key) {
+            pointer ptr = Nebula.get(key);
+            if (ptr.second)
+                return ptr.first->record.second;
+            else {
+                pointer ptrr = Nebula.insert(key);
+                return ptrr.first->record.second;
+            }
+        }
 
         /**
          * behave like at() throw index_out_of_bound if such key does not exist.
          */
-        const T &operator[](const Key &key) const {}
+        const T &operator[](const Key &key) const {
+            pointer ptr = Nebula.get(key);
+            if (ptr.second)
+                return ptr.first->record.second;
+            else throw index_out_of_bound();
+        }
 
         /**
          * return a iterator to the beginning
          */
-        iterator begin() {}
+        iterator begin() {
+            iterator tmp;
+            tmp.source = &Nebula;
+            tmp.ptr = Nebula.Beg;
+            return tmp;
+        }
 
-        const_iterator cbegin() const {}
+        const_iterator cbegin() const {
+            const_iterator tmp;
+            tmp.source = &Nebula;
+            tmp.ptr = Nebula.Beg;
+            return tmp;
+        }
 
         /**
          * return a iterator to the end
          * in fact, it returns past-the-end.
          */
-        iterator end() {}
+        iterator end() {
+            iterator tmp;
+            tmp.source = &Nebula;
+            tmp.ptr = nullptr;
+            return tmp;
+        }
 
-        const_iterator cend() const {}
+        const_iterator cend() const {
+            iterator tmp;
+            tmp.source = &Nebula;
+            tmp.ptr = nullptr;
+            return tmp;
+        }
 
         /**
          * checks whether the container is empty
          * return true if empty, otherwise false.
          */
-        bool empty() const {}
+        bool empty() const {
+            return (Nebula.head == nullptr);
+        }
 
         /**
          * returns the number of elements.
          */
-        size_t size() const {}
+        size_t size() const {
+            return Nebula.count;
+        }
 
         /**
          * clears the contents
          */
-        void clear() {}
+        void clear() {
+            Nebula.Clear();
+        }
 
         /**
          * insert an element.
@@ -757,14 +1039,20 @@ namespace sjtu {
          *   the iterator to the new element (or the element that prevented the insertion),
          *   the second one is true if insert successfully, or false.
          */
-        pair<iterator, bool> insert(const value_type &value) {}
+        pair<iterator, bool> insert(const value_type &value) {
+            pointer tmp = Nebula.insert(value.first, value.second);
+            return pair<iterator, bool>(iterator(tmp.first, &Nebula), tmp.second);
+        }
 
         /**
          * erase the element at pos.
          *
          * throw if pos pointed to a bad element (pos == this->end() || pos points an element out of this)
          */
-        void erase(iterator pos) {}
+        void erase(iterator pos) {
+            if (&Nebula!=pos.source || pos == end()) throw invalid_iterator();
+            Nebula.Delete(pos.ptr->record.first);
+        }
 
         /**
          * Returns the number of elements with key
@@ -773,7 +1061,9 @@ namespace sjtu {
          *     since this container does not allow duplicates.
          * The default method of check the equivalence is !(a < b || b > a)
          */
-        size_t count(const Key &key) const {}
+        size_t count(const Key &key) const {
+            return Nebula.get(key).second;
+        }
 
         /**
          * Finds an element with key equivalent to key.
@@ -781,9 +1071,21 @@ namespace sjtu {
          * Iterator to an element with key equivalent to key.
          *   If no such element is found, past-the-end (see end()) iterator is returned.
          */
-        iterator find(const Key &key) {}
+        iterator find(const Key &key) {
+            pointer tmp = Nebula.get(key);
+            if (!tmp.second) {
+                return end();
+            }
+            return iterator(tmp.first, &Nebula);
+        }
 
-        const_iterator find(const Key &key) const {}
+        const_iterator find(const Key &key) const {
+            pointer tmp = Nebula.get(key);
+            if (!tmp.second) {
+                return cend();
+            }
+            return iterator(tmp.first, &Nebula);
+        }
     };
 
 }
