@@ -2,3 +2,5 @@
 /cmake-*
 class*
 tmz*
+*.out
+src/main*
