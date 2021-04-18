@@ -110,18 +110,12 @@ namespace sjtu {
         }
 
     public:
-        /**
-         * TODO constructors
-         */
         priority_queue() : root(nullptr), _size(0) {}
 
         priority_queue(const priority_queue &other) : _size(other._size) {
             _copy(root, other.root);
         }
 
-        /**
-         * TODO deconstructor
-         */
         ~priority_queue() {
             for (Node *i = root, *j; i; i = j) {
                 j = i->next;
@@ -129,9 +123,6 @@ namespace sjtu {
             }
         }
 
-        /**
-         * TODO Assignment operator
-         */
         priority_queue &operator=(const priority_queue &other) {
             if (this == &other) return *this;
             clear();
@@ -140,11 +131,6 @@ namespace sjtu {
             return *this;
         }
 
-        /**
-         * get the top of the queue.
-         * @return a reference of the top element.
-         * throw container_is_empty if empty() returns true;
-         */
         const T &top() const {
             if (!root) {
                 throw container_is_empty();
@@ -157,10 +143,6 @@ namespace sjtu {
             return res->value;
         }
 
-        /**
-         * TODO
-         * push new element to the priority queue.
-         */
         void push(const T &e) {
             ++_size;
             if (!root) {
@@ -174,11 +156,6 @@ namespace sjtu {
             }
         }
 
-        /**
-         * TODO
-         * delete the top element.
-         * throw container_is_empty if empty() returns true;
-         */
         void pop() {
             if (!root) {
                 throw container_is_empty();
@@ -204,24 +181,14 @@ namespace sjtu {
             delete now_t;
         }
 
-        /**
-         * return the number of the elements.
-         */
         size_t size() const {
             return _size;
         }
 
-        /**
-         * check if the container has at least an element.
-         * @return true if it is empty, false if it has at least an element.
-         */
         bool empty() const {
             return (_size == 0);
         }
 
-        /**
-         * return a merged priority_queue with at least O(logn) complexity.
-         */
         void merge(priority_queue &other) {
             _insert(other.root);
             other.root = nullptr;

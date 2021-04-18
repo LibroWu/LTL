@@ -456,20 +456,8 @@ namespace sjtu {
         } Nebula;
 
     public:
-        /**
-         * the internal type of data.
-         * it should have a default constructor, a copy constructor.
-         * You can use sjtu::map as value_type by typedef.
-         */
         typedef pair<const Key, T> value_type;
 
-        /**
-         * see BidirectionalIterator at CppReference for help.
-         *
-         * if there is anything wrong throw invalid_iterator.
-         *     like it = map.begin(); --it;
-         *       or it = map.end(); ++end();
-         */
         class const_iterator;
 
         class iterator {
@@ -485,9 +473,6 @@ namespace sjtu {
 
             iterator(const iterator &other) : ptr(other.ptr), source(other.source) {}
 
-            /**
-             * TODO iter++
-             */
             iterator operator++(int) {
                 if (ptr == nullptr) throw invalid_iterator();
                 iterator tmp(*this);
@@ -495,18 +480,12 @@ namespace sjtu {
                 return tmp;
             }
 
-            /**
-             * TODO ++iter
-             */
             iterator &operator++() {
                 if (ptr == nullptr) throw invalid_iterator();
                 ptr = ptr->next;
                 return *this;
             }
 
-            /**
-             * TODO iter--
-             */
             iterator operator--(int) {
                 if (source->count==0) throw invalid_iterator();
                 if (ptr == nullptr) {
@@ -519,9 +498,6 @@ namespace sjtu {
                 return tmp;
             }
 
-            /**
-             * TODO --iter
-             */
             iterator &operator--() {
                 if (source->count==0) throw invalid_iterator();
                 if (ptr == nullptr) {
@@ -538,9 +514,6 @@ namespace sjtu {
                 return ptr->record;
             }
 
-            /**
-             * an operator to check whether two iterators are same (pointing to the same memory).
-             */
             bool operator==(const iterator &rhs) const {
                 return (ptr == rhs.ptr && source == rhs.source);
             }
@@ -549,9 +522,6 @@ namespace sjtu {
                 return (ptr == rhs.ptr && source == rhs.source);
             }
 
-            /**
-             * some other operator for iterator.
-             */
             bool operator!=(const iterator &rhs) const {
                 return (ptr != rhs.ptr || source != rhs.source);
             }
@@ -560,10 +530,6 @@ namespace sjtu {
                 return (ptr != rhs.ptr || source != rhs.source);
             }
 
-            /**
-             * for the support of it->first.
-             * See <http://kelvinh.github.io/blog/2013/11/20/overloading-of-member-access-operator-dash-greater-than-symbol-in-cpp/> for help.
-             */
             value_type *operator->() const noexcept {
                 return &(ptr->record);
             }
@@ -584,9 +550,6 @@ namespace sjtu {
 
             const_iterator(const iterator &other) : ptr(other.ptr), source(other.source) {}
 
-            /**
-             * TODO iter++
-             */
             const_iterator operator++(int) {
                 if (ptr == nullptr) throw invalid_iterator();
                 const_iterator tmp(*this);
@@ -594,18 +557,12 @@ namespace sjtu {
                 return tmp;
             }
 
-            /**
-             * TODO ++iter
-             */
             const_iterator &operator++() {
                 if (ptr == nullptr) throw invalid_iterator();
                 ptr = ptr->next;
                 return *this;
             }
 
-            /**
-             * TODO iter--
-             */
             const_iterator operator--(int) {
                 if (source->count==0) throw invalid_iterator();
                 if (ptr == nullptr) {
@@ -618,9 +575,6 @@ namespace sjtu {
                 return tmp;
             }
 
-            /**
-             * TODO --iter
-             */
             const_iterator &operator--() {
                 if (source->count==0) throw invalid_iterator();
                 if (ptr == nullptr) {
@@ -637,9 +591,6 @@ namespace sjtu {
                 return ptr->record;
             }
 
-            /**
-             * an operator to check whether two iterators are same (pointing to the same memory).
-             */
             bool operator==(const iterator &rhs) const {
                 return (ptr == rhs.ptr && source == rhs.source);
             }
@@ -648,9 +599,6 @@ namespace sjtu {
                 return (ptr == rhs.ptr && source == rhs.source);
             }
 
-            /**
-             * some other operator for iterator.
-             */
             bool operator!=(const iterator &rhs) const {
                 return (ptr != rhs.ptr || source != rhs.source);
             }
@@ -659,41 +607,22 @@ namespace sjtu {
                 return (ptr != rhs.ptr || source != rhs.source);
             }
 
-            /**
-             * for the support of it->first.
-             * See <http://kelvinh.github.io/blog/2013/11/20/overloading-of-member-access-operator-dash-greater-than-symbol-in-cpp/> for help.
-             */
             const value_type *operator->() const noexcept {
                 return &(ptr->record);
             }
         };
 
-        /**
-         * TODO two constructors
-         */
         map() {}
 
         map(const map &other) : Nebula(other.Nebula) {}
 
-        /**
-         * TODO assignment operator
-         */
         map &operator=(const map &other) {
             Nebula = other.Nebula;
             return *this;
         }
 
-        /**
-         * TODO Destructors
-         */
         ~map() {}
 
-        /**
-         * TODO
-         * access specified element with bounds checking
-         * Returns a reference to the mapped value of the element with key equivalent to key.
-         * If no such element exists, an exception of type `index_out_of_bound'
-         */
         T &at(const Key &key) {
             pointer ptr = Nebula.get(key);
             if (ptr.second)
@@ -708,12 +637,6 @@ namespace sjtu {
             else throw index_out_of_bound();
         }
 
-        /**
-         * TODO
-         * access specified element
-         * Returns a reference to the value that is mapped to a key equivalent to key,
-         *   performing an insertion if such key does not already exist.
-         */
         T &operator[](const Key &key) {
             pointer ptr = Nebula.get(key);
             if (ptr.second)
@@ -724,9 +647,6 @@ namespace sjtu {
             }
         }
 
-        /**
-         * behave like at() throw index_out_of_bound if such key does not exist.
-         */
         const T &operator[](const Key &key) const {
             pointer ptr = Nebula.get(key);
             if (ptr.second)
@@ -734,9 +654,6 @@ namespace sjtu {
             else throw index_out_of_bound();
         }
 
-        /**
-         * return a iterator to the beginning
-         */
         iterator begin() {
             iterator tmp;
             tmp.source = &Nebula;
@@ -751,10 +668,6 @@ namespace sjtu {
             return tmp;
         }
 
-        /**
-         * return a iterator to the end
-         * in fact, it returns past-the-end.
-         */
         iterator end() {
             iterator tmp;
             tmp.source = &Nebula;
@@ -769,66 +682,32 @@ namespace sjtu {
             return tmp;
         }
 
-        /**
-         * checks whether the container is empty
-         * return true if empty, otherwise false.
-         */
         bool empty() const {
             return (Nebula.head == nullptr);
         }
 
-        /**
-         * returns the number of elements.
-         */
         size_t size() const {
             return Nebula.count;
         }
 
-        /**
-         * clears the contents
-         */
         void clear() {
             Nebula.Clear();
         }
 
-        /**
-         * insert an element.
-         * return a pair, the first of the pair is
-         *   the iterator to the new element (or the element that prevented the insertion),
-         *   the second one is true if insert successfully, or false.
-         */
         pair<iterator, bool> insert(const value_type &value) {
             pointer tmp = Nebula.insert(value.first, value.second);
             return pair<iterator, bool>(iterator(tmp.first, &Nebula), tmp.second);
         }
 
-        /**
-         * erase the element at pos.
-         *
-         * throw if pos pointed to a bad element (pos == this->end() || pos points an element out of this)
-         */
         void erase(iterator pos) {
             if (&Nebula != pos.source || pos == end()) throw invalid_iterator();
             Nebula.Delete(pos.ptr->record.first);
         }
 
-        /**
-         * Returns the number of elements with key
-         *   that compares equivalent to the specified argument,
-         *   which is either 1 or 0
-         *     since this container does not allow duplicates.
-         * The default method of check the equivalence is !(a < b || b > a)
-         */
         size_t count(const Key &key) const {
             return Nebula.get(key).second;
         }
 
-        /**
-         * Finds an element with key equivalent to key.
-         * key value of the element to search for.
-         * Iterator to an element with key equivalent to key.
-         *   If no such element is found, past-the-end (see end()) iterator is returned.
-         */
         iterator find(const Key &key) {
             pointer tmp = Nebula.get(key);
             if (!tmp.second) return end();
