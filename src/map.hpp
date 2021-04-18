@@ -36,8 +36,8 @@ namespace sjtu {
                                                                       pre(nullptr), nodeColor(col) {}
 
             explicit RedBlackNode(const RedBlackNode *other) : record(other->record), nodeColor(other->nodeColor),
-                                                      parent(nullptr),
-                                                      lch(nullptr), rch(nullptr), next(nullptr), pre(nullptr) {}
+                                                               parent(nullptr),
+                                                               lch(nullptr), rch(nullptr), next(nullptr), pre(nullptr) {}
 
             ~RedBlackNode() {
                 if (next)
@@ -508,6 +508,7 @@ namespace sjtu {
              * TODO iter--
              */
             iterator operator--(int) {
+                if (source->count==0) throw invalid_iterator();
                 if (ptr == nullptr) {
                     ptr = source->End;
                     return iterator(nullptr, source);
@@ -522,6 +523,7 @@ namespace sjtu {
              * TODO --iter
              */
             iterator &operator--() {
+                if (source->count==0) throw invalid_iterator();
                 if (ptr == nullptr) {
                     ptr = source->End;
                     return *this;
@@ -605,6 +607,7 @@ namespace sjtu {
              * TODO iter--
              */
             const_iterator operator--(int) {
+                if (source->count==0) throw invalid_iterator();
                 if (ptr == nullptr) {
                     ptr = source->End;
                     return iterator(nullptr, source);
@@ -619,6 +622,7 @@ namespace sjtu {
              * TODO --iter
              */
             const_iterator &operator--() {
+                if (source->count==0) throw invalid_iterator();
                 if (ptr == nullptr) {
                     ptr = source->End;
                     return *this;
@@ -676,6 +680,7 @@ namespace sjtu {
          */
         map &operator=(const map &other) {
             Nebula = other.Nebula;
+            return *this;
         }
 
         /**
