@@ -18,7 +18,7 @@ namespace sjtu {
             class Compare = std::less<Key>
     >
     class map {
-    public:
+    private:
 
         enum COLOR {
             red, black
@@ -37,7 +37,8 @@ namespace sjtu {
 
             explicit RedBlackNode(const RedBlackNode *other) : record(other->record), nodeColor(other->nodeColor),
                                                                parent(nullptr),
-                                                               lch(nullptr), rch(nullptr), next(nullptr), pre(nullptr) {}
+                                                               lch(nullptr), rch(nullptr), next(nullptr),
+                                                               pre(nullptr) {}
 
             ~RedBlackNode() {
                 if (next)
@@ -141,8 +142,7 @@ namespace sjtu {
                 if (P == head) {
                     head = ptr;
                     ptr->parent = nullptr;
-                }
-                else {
+                } else {
                     if (isLeftChild(P)) P->parent->lch = ptr;
                     else P->parent->rch = ptr;
                     ptr->parent = P->parent;
@@ -150,11 +150,10 @@ namespace sjtu {
                 P->parent = ptr;
                 if (flag_ptr) {
                     if (ptr->rch) ptr->rch->parent = P;
-                    P->lch = ptr->rch,ptr->rch = P;
-                }
-                else {
+                    P->lch = ptr->rch, ptr->rch = P;
+                } else {
                     if (ptr->lch) ptr->lch->parent = P;
-                    P->rch = ptr->lch,ptr->lch = P;
+                    P->rch = ptr->lch, ptr->lch = P;
                 }
             }
 
@@ -162,12 +161,12 @@ namespace sjtu {
                 //LL & RR
                 if (P->lch == ptr && G->lch == P || P->rch == ptr && G->rch == P) {
                     singleRotate(P);
-                    if (dye_pattern == 0) P->nodeColor = black,G->nodeColor = red;
-                    else if (dye_pattern == 1) ptr->nodeColor = black,G->nodeColor = black,P->nodeColor = red;
+                    if (dye_pattern == 0) P->nodeColor = black, G->nodeColor = red;
+                    else if (dye_pattern == 1) ptr->nodeColor = black, G->nodeColor = black, P->nodeColor = red;
                 }
                 //LR & RL
                 if (P->rch == ptr && G->lch == P || P->lch == ptr && G->rch == P) {
-                    singleRotate(ptr),singleRotate(ptr);
+                    singleRotate(ptr), singleRotate(ptr);
                     if (dye_pattern == 0) ptr->nodeColor = black, G->nodeColor = red;
                     else if (dye_pattern == 1) ptr->nodeColor = red, G->nodeColor = black, P->nodeColor = black;
                 }
@@ -176,7 +175,7 @@ namespace sjtu {
             pointer insert(const Key &key, const T &value = T()) {
                 Compare cmp;
                 if (!head) {
-                    head = new RedBlackNode(key, value, black),Beg = End = head,++count;
+                    head = new RedBlackNode(key, value, black), Beg = End = head, ++count;
                     return pointer(head, true);
                 }
                 RedBlackNode *ptr = head, *child, *P, *G, *pre, *next;
@@ -261,33 +260,28 @@ namespace sjtu {
                     if (a->parent) {
                         if (A_lch) a->parent->lch = b;
                         else a->parent->rch = b;
-                    }
-                    else head = b;
+                    } else head = b;
                     b->parent = a->parent, a->parent = b;
                     if (B_lch) {
                         b->lch = a, b->rch = a->rch;
                         if (a->rch) a->rch->parent = b;
-                    }
-                    else {
+                    } else {
                         b->rch = a, b->lch = a->lch;
                         if (a->lch) a->lch->parent = b;
                     }
                     if (BL) BL->parent = a;
                     if (BR) BR->parent = a;
                     a->lch = BL, a->rch = BR;
-                }
-                else {
+                } else {
                     if (BP) {
                         if (B_lch) BP->lch = a;
                         else BP->rch = a;
-                    }
-                    else head = a;
+                    } else head = a;
                     b->parent = a->parent;
                     if (a->parent) {
                         if (A_lch) a->parent->lch = b;
                         else a->parent->rch = b;
-                    }
-                    else head = b;
+                    } else head = b;
                     a->parent = BP;
                     if (BL) BL->parent = a;
                     if (BR) BR->parent = a;
@@ -316,8 +310,7 @@ namespace sjtu {
                     if (isLeftChild(ptr)) {
                         if (tmp->rch && tmp->rch->nodeColor == red) return tmp->rch;
                         if (tmp->lch && tmp->lch->nodeColor == red) return tmp->lch;
-                    }
-                    else {
+                    } else {
                         if (tmp->lch && tmp->lch->nodeColor == red) return tmp->lch;
                         if (tmp->rch && tmp->rch->nodeColor == red) return tmp->rch;
                     }
@@ -340,13 +333,11 @@ namespace sjtu {
                                 if (ptr->parent) ptr->parent->nodeColor = black;
                                 ptr->nodeColor = red;
                                 if (Sib) Sib->nodeColor = red;
-                            }
-                            else {
+                            } else {
                                 rotate(R, Sib, ptr->parent, 1);
                                 ptr->nodeColor = red;
                             }
-                        }
-                        else {
+                        } else {
                             if (!cmp(key, ptr->record.first) && !cmp(ptr->record.first, key)) {
                                 if (flag)
                                     flag = 1;
@@ -356,8 +347,7 @@ namespace sjtu {
                                     singleRotate(child);
                                     child->nodeColor = black;
                                     ptr->nodeColor = red;
-                                }
-                                else {
+                                } else {
                                     P = ptr->next, Sib = ptr->lch;
                                     SwapTwoRBNode(ptr, ptr->next);
                                     if (P->rch->nodeColor == black) {
@@ -368,18 +358,16 @@ namespace sjtu {
                                     ptr = P->rch;
                                 }
                                 continue;
-                            }
-                            else if (cmp(key, ptr->record.first)) {
-                                P = ptr,Sib = P->rch,ptr = ptr->lch;
+                            } else if (cmp(key, ptr->record.first)) {
+                                P = ptr, Sib = P->rch, ptr = ptr->lch;
                                 if (ptr && ptr->nodeColor == black) {
-                                    singleRotate(Sib),P->nodeColor = red,Sib->nodeColor = black;
+                                    singleRotate(Sib), P->nodeColor = red, Sib->nodeColor = black;
                                 }
                                 continue;
-                            }
-                            else {
-                                P = ptr,Sib = P->lch,ptr = ptr->rch;
+                            } else {
+                                P = ptr, Sib = P->lch, ptr = ptr->rch;
                                 if (ptr && ptr->nodeColor == black) {
-                                    singleRotate(Sib),P->nodeColor = red,Sib->nodeColor = black;
+                                    singleRotate(Sib), P->nodeColor = red, Sib->nodeColor = black;
                                 }
                                 continue;
                             }
@@ -395,8 +383,7 @@ namespace sjtu {
                                     if (isLeftChild(ptr)) ptr->parent->lch = ptr->lch;
                                     else ptr->parent->rch = ptr->lch;
                                     ptr->lch->parent = ptr->parent;
-                                }
-                                else {
+                                } else {
                                     head = ptr->lch;
                                     ptr->lch->parent = nullptr;
                                 }
@@ -405,22 +392,19 @@ namespace sjtu {
                                 if (ptr->parent) {
                                     if (isLeftChild(ptr)) ptr->parent->lch = nullptr;
                                     else ptr->parent->rch = nullptr;
-                                }
-                                else head = nullptr;
+                                } else head = nullptr;
                             }
                             Del(ptr);
                             --count;
                             break;
-                        }
-                        else {
+                        } else {
                             //has the right child
                             if (ptr->lch == nullptr) {
                                 if (ptr->parent) {
                                     if (isLeftChild(ptr)) ptr->parent->lch = ptr->rch;
                                     else ptr->parent->rch = ptr->rch;
                                     ptr->rch->parent = ptr->parent;
-                                }
-                                else {
+                                } else {
                                     head = ptr->rch;
                                     ptr->rch->parent = nullptr;
                                 }
@@ -434,8 +418,7 @@ namespace sjtu {
                                 ptr = child->rch;
                             }
                         }
-                    }
-                    else ptr = cmp(key, ptr->record.first) ? ptr->lch : ptr->rch;
+                    } else ptr = cmp(key, ptr->record.first) ? ptr->lch : ptr->rch;
                 }
                 //adjust the root color
                 if (head && head->nodeColor == red)
@@ -487,7 +470,7 @@ namespace sjtu {
             }
 
             iterator operator--(int) {
-                if (source->count==0) throw invalid_iterator();
+                if (source->count == 0) throw invalid_iterator();
                 if (ptr == nullptr) {
                     ptr = source->End;
                     return iterator(nullptr, source);
@@ -499,7 +482,7 @@ namespace sjtu {
             }
 
             iterator &operator--() {
-                if (source->count==0) throw invalid_iterator();
+                if (source->count == 0) throw invalid_iterator();
                 if (ptr == nullptr) {
                     ptr = source->End;
                     return *this;
@@ -564,7 +547,7 @@ namespace sjtu {
             }
 
             const_iterator operator--(int) {
-                if (source->count==0) throw invalid_iterator();
+                if (source->count == 0) throw invalid_iterator();
                 if (ptr == nullptr) {
                     ptr = source->End;
                     return iterator(nullptr, source);
@@ -576,7 +559,7 @@ namespace sjtu {
             }
 
             const_iterator &operator--() {
-                if (source->count==0) throw invalid_iterator();
+                if (source->count == 0) throw invalid_iterator();
                 if (ptr == nullptr) {
                     ptr = source->End;
                     return *this;
